@@ -359,7 +359,7 @@ $("tForm").onsubmit = async e => {
     try{ localStorage.setItem("tested","1"); }catch{}
   }catch(err){
     testHist.pop();
-    const T=t(); testHist.push({role:"note", text: err.code==="ai_not_configured" ? T.aiOff : err.code==="too_many_attempts" ? T.err.too_many_attempts : T.aiBusy});
+    const T=t(); testHist.push({role:"note", text: err.code==="ai_not_configured" ? T.aiOff : err.code==="ai_config_error" ? T.aiConfig : err.code==="too_many_attempts" ? T.err.too_many_attempts : T.aiBusy});
     testHist.splice(-1, 0, {role:"user", text});
   }
   drawTest();

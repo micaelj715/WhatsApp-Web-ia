@@ -41,6 +41,11 @@ td .acts{display:flex;gap:6px;flex-wrap:wrap}
     <div class="card kpi"><span class="label">WhatsApps conectados</span><span class="val" id="kWa">0</span></div>
   </div>
 
+  <div class="card" id="aiCard">
+    <div class="top"><h2>IA (Groq)</h2><button class="btn ghost sm" id="aiBtn" type="button">Testar conexão com a IA</button></div>
+    <div id="aiOut" class="small muted">Clique para testar a chave e os modelos configurados no Railway.</div>
+  </div>
+
   <div class="card" id="payCard">
     <h2>Pagamentos para confirmar</h2>
     <p class="small muted">Confira no seu PayPal se o dinheiro entrou antes de confirmar. Confirmar libera 1 mês do plano.</p>
@@ -115,6 +120,24 @@ document.addEventListener("click", async e => {
 });
 $("q").oninput = render; $("fState").onchange = render;
 $("logout").onclick = async () => { await api("/api/logout",{method:"POST"}).catch(()=>{}); location.href="/entrar"; };
+const AI_HELP = {
+  missing_groq_key: "A variável GROQ_API_KEY não está definida no Railway.",
+  ai_bad_key: "O Groq recusou a chave. Crie uma nova em console.groq.com > API Keys e cole em GROQ_API_KEY (sem aspas nem espaços).",
+  ai_bad_model: "Este modelo não está liberado para a sua conta. Apague a variável GROQ_MODEL no Railway para usar o padrão.",
+  ai_busy: "O Groq está no limite de uso agora. Espere um pouco ou ative o plano pago.",
+  ai_network: "O servidor não conseguiu falar com o Groq. Tente de novo em instantes.",
+  ai_empty: "O modelo respondeu vazio. Tente de novo.",
+};
+$("aiBtn").onclick = async () => {
+  $("aiBtn").disabled = true; $("aiOut").textContent = "Testando…";
+  try {
+    const r = await api("/api/admin/ai-check");
+    if (r.code) { $("aiOut").innerHTML = `<p class="msg-error">${esc(AI_HELP[r.code] || r.code)}</p>`; }
+    else $("aiOut").innerHTML = `<p class="${r.ok ? "msg-ok" : "msg-error"}">${r.ok ? "A IA está funcionando." : "A IA não está funcionando."} Chave: ${esc(r.keyStart || "(vazia)")}</p>` +
+      r.results.map(x => `<p style="margin-top:8px"><strong>${esc(x.model)}</strong>: ${x.ok ? `OK em ${x.ms} ms` : esc(AI_HELP[x.code] || x.code)}${x.detail ? `<br><span class="mono small muted">${esc(x.detail)}</span>` : ""}</p>`).join("");
+  } catch { $("aiOut").textContent = "Não consegui testar agora."; }
+  $("aiBtn").disabled = false;
+};
 load(); setInterval(load, 30000);
 </script>
 </body>

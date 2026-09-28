@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { config, assertConfig } from "./config.js";
 import { db, getTenant, accessState, saveMessage, chatHistory, useQuota, usageOf, today, addDays, addMonths, cleanup } from "./db.js";
 import { PLANS, CURRENCIES, TRIAL_LIMIT, paypalAmount } from "./plans.js";
-import { answer } from "./ai.js";
+import { answer, checkAI } from "./ai.js";
 import * as wa from "./wa.js";
 import { createRouter, parseCookies, readJson, sendJson, redirect, serveFile, safeJoin, HttpError } from "./http.js";
 
@@ -289,7 +289,9 @@ r.post("/api/test-chat", async (req, res) => {
     sendJson(res, 200, out);
   } catch (e) {
     log("test-chat", t.id, e.message);
-    throw new HttpError(503, e.message === "missing_groq_key" ? "ai_not_configured" : "ai_busy");
+    const code = e.code === "missing_groq_key" ? "ai_not_configured"
+      : ["ai_bad_key", "ai_bad_model"].includes(e.code) ? "ai_config_error" : "ai_busy";
+    throw new HttpError(503, code);
   }
 });
 
@@ -329,6 +331,11 @@ r.post("/api/payments/claim", async (req, res) => {
 });
 
 /* ---------- Administração ---------- */
+r.get("/api/admin/ai-check", async (req, res) => {
+  needAdmin(req);
+  sendJson(res, 200, { ...(await checkAI()), keyStart: config.groqKey ? config.groqKey.slice(0, 4) + "…" : "", models: [config.groqModel, config.groqFallbackModel] });
+});
+
 r.get("/api/admin/overview", (req, res) => {
   needAdmin(req);
   const tenants = db.prepare("SELECT t.id FROM tenants t ORDER BY t.created_at DESC").all().map(({ id }) => {
@@ -436,6 +443,11 @@ server.listen(config.port, () => {
   log(`Servidor no ar na porta ${config.port}. Dados em ${config.dataDir}`);
   wa.restoreAll(db.prepare("SELECT id FROM tenants WHERE suspended = 0").all().map(x => x.id))
     .catch(e => log("restore", e.message));
+  // Testa a IA ao ligar e escreve o resultado nos logs do Railway
+  checkAI().then(r => {
+    if (r.ok) log("IA OK:", r.results.filter(x => x.ok).map(x => `${x.model} (${x.ms} ms)`).join(", "));
+    else log("IA COM PROBLEMA:", JSON.stringify(r));
+  }).catch(e => log("IA check", e.message));
 });
 
 for (const sig of ["SIGTERM", "SIGINT"]) process.on(sig, () => { log("desligando"); server.close(); setTimeout(() => process.exit(0), 1500).unref(); });

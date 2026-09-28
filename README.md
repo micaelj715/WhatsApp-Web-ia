@@ -40,7 +40,7 @@ O atendente:
 | `PAYPAL_LINK` | `https://paypal.me/seunome` | Link de pagamento. Se for paypal.me, o valor e a moeda já vão preenchidos |
 | `SUPPORT_WHATSAPP` | `2389912345` | Seu WhatsApp de suporte (código do país + número, só números) |
 | `DATA_DIR` | `/data` | Pasta do volume (se não definir, usa o caminho do volume do Railway) |
-| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Opcional. Modelo da IA |
+| `GROQ_MODEL` | (deixe sem) | Opcional. O padrão é `openai/gpt-oss-120b`, com `openai/gpt-oss-20b` de reserva, liberados no plano grátis do Groq |
 | `TRIAL_DAYS` | `7` | Opcional. Dias de teste grátis |
 
 ### 4. Endereço e domínio
@@ -51,6 +51,14 @@ O atendente:
 1. Abra `/entrar`, crie uma conta de teste com outro e-mail e conecte um WhatsApp seu.
 2. De outro celular, mande uma mensagem para esse número e veja o atendente responder.
 3. Entre em `/entrar` com o `ADMIN_EMAIL` para ver o `/admin`.
+
+## Se o atendente disser "ocupado" ou não responder
+1. Entre em `/admin` e clique em **Testar conexão com a IA**. A tela mostra o problema exato e o que fazer.
+2. Ou abra os logs do Railway (Deploy Logs): ao ligar, o servidor escreve `IA OK` ou `IA COM PROBLEMA` com o motivo.
+3. Causas mais comuns:
+   - chave errada, com aspas ou com espaço: crie uma nova em console.groq.com > API Keys e cole só o texto `gsk_...`;
+   - `GROQ_MODEL` apontando para um modelo que não está no seu plano: apague essa variável;
+   - limite do plano grátis atingido: espere um minuto ou ative o plano pago.
 
 ## Como funciona o pagamento
 1. O cliente escolhe o plano no painel e clica em "Pagar com PayPal" (cartão de crédito ou saldo).

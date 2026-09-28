@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrar · Micael Automações</title>
+<meta name="theme-color" content="#0d7a55">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/app.css">
+<style>
+.page{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px;gap:20px}
+.top{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.box{width:100%;max-width:520px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:12px;padding:4px}
+.tabs button{border:0;background:transparent;padding:10px;border-radius:9px;font-weight:600;cursor:pointer;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.plans label{border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:2px;font-size:.85rem}
+.plans input{position:absolute;opacity:0;pointer-events:none}
+.plans label:has(input:checked){border:2px solid var(--accent);padding:9px}
+.plans b{font-family:var(--display);font-size:1rem}
+.plans .p{font-variant-numeric:tabular-nums;font-weight:600}
+@media (max-width:480px){.plans{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <a class="logo" href="/">Micael<span>.</span>Automações</a>
+    <div class="seg" id="langs"></div>
+  </div>
+  <div class="card box">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabSignup" data-t="signup"></button>
+      <button type="button" role="tab" id="tabLogin" data-t="login"></button>
+    </div>
+
+    <form id="fSignup" novalidate style="display:flex;flex-direction:column;gap:12px">
+      <p class="msg-ok" data-t="trialNote"></p>
+      <div class="row2">
+        <div class="field"><label for="sName" data-t="name"></label><input id="sName" autocomplete="name"></div>
+        <div class="field"><label for="sBiz" data-t="business"></label><input id="sBiz" required></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="sNiche" data-t="niche"></label><select id="sNiche"></select></div>
+        <div class="field"><label for="sCountry" data-t="country"></label><input id="sCountry" autocomplete="country-name"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="sLang" data-t="lang"></label><select id="sLang"><option value="pt">Português</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option></select></div>
+        <div class="field"><label for="sCur" data-t="currency"></label><select id="sCur"><option>CVE</option><option>EUR</option><option>BRL</option><option>USD</option></select></div>
+      </div>
+      <div class="field"><span class="small muted" style="font-weight:600" data-t="plan"></span><div class="plans" id="sPlans"></div></div>
+      <div class="field"><label for="sEmail" data-t="email"></label><input id="sEmail" type="email" autocomplete="email" required></div>
+      <div class="field"><label for="sPass" data-t="password"></label><input id="sPass" type="password" autocomplete="new-password" minlength="8" required><span class="small muted" data-t="passHint"></span></div>
+      <p class="msg-error" id="sErr" hidden></p>
+      <button class="btn" type="submit" id="sBtn" data-t="createAccount"></button>
+    </form>
+
+    <form id="fLogin" novalidate style="display:flex;flex-direction:column;gap:12px" hidden>
+      <div class="field"><label for="lEmail" data-t="email"></label><input id="lEmail" type="email" autocomplete="email"></div>
+      <div class="field"><label for="lPass" data-t="password"></label><input id="lPass" type="password" autocomplete="current-password"></div>
+      <p class="msg-error" id="lErr" hidden></p>
+      <button class="btn" type="submit" id="lBtn" data-t="enter"></button>
+    </form>
+  </div>
+  <a class="small" href="/" data-t="backSite"></a>
+</div>
+<script src="/i18n.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+let lang = getLang(), mode = params.get("modo") === "entrar" ? "login" : "signup";
+let plans = null, selPlan = ["ess","pro","com"].includes(params.get("plano")) ? params.get("plano") : "pro";
+
+function guessCur(){
+  const n=(navigator.language||"").toLowerCase();
+  try{ const c=localStorage.getItem("cur"); if(["CVE","EUR","BRL","USD"].includes(c)) return c; }catch{}
+  return n==="pt-br"?"BRL":n==="pt-cv"?"CVE":n==="en-us"?"USD":"EUR";
+}
+$("sCur").value = guessCur(); $("sLang").value = lang;
+
+function render(){
+  const t = I18N[lang];
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(el => el.textContent = t[el.dataset.t]);
+  $("langs").innerHTML = Object.keys(I18N).map(l=>`<button type="button" data-l="${l}" aria-pressed="${l===lang}">${l.toUpperCase()}</button>`).join("");
+  const keep = $("sNiche").value;
+  $("sNiche").innerHTML = Object.entries(t.niches).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+  if(keep) $("sNiche").value = keep;
+  $("tabSignup").setAttribute("aria-selected", mode==="signup"); $("tabLogin").setAttribute("aria-selected", mode==="login");
+  $("fSignup").hidden = mode!=="signup"; $("fLogin").hidden = mode!=="login";
+  renderPlans();
+}
+function renderPlans(){
+  const t = I18N[lang], cur = $("sCur").value;
+  if(!plans){ $("sPlans").innerHTML=""; return; }
+  $("sPlans").innerHTML = ["ess","pro","com"].map(k=>`<label><input type="radio" name="plan" value="${k}" ${k===selPlan?"checked":""}><b>${t.plans[k]}</b><span class="p">${fmtMoney(plans[k].price[cur],cur,lang)}${t.month}</span><span class="muted">${t.perMonth.replace("{n}",plans[k].limit.toLocaleString())}</span></label>`).join("");
+}
+function showErr(el, code){ const t=I18N[lang]; el.textContent = t.err[code] || t.err.generic; el.hidden=false; }
+
+$("langs").onclick = e => { const l=e.target.dataset.l; if(!l) return; lang=l; setLang(l); $("sLang").value=l; render(); };
+$("tabSignup").onclick = () => { mode="signup"; render(); };
+$("tabLogin").onclick = () => { mode="login"; render(); };
+$("sCur").onchange = () => { try{localStorage.setItem("cur",$("sCur").value);}catch{} renderPlans(); };
+$("sPlans").onchange = e => { if(e.target.name==="plan") selPlan=e.target.value; };
+
+$("fSignup").onsubmit = async e => {
+  e.preventDefault(); $("sErr").hidden=true; $("sBtn").disabled=true;
+  try{
+    await api("/api/signup",{method:"POST",body:{name:$("sName").value,business:$("sBiz").value,niche:$("sNiche").value,country:$("sCountry").value,
+      lang:$("sLang").value,currency:$("sCur").value,plan:selPlan,email:$("sEmail").value,password:$("sPass").value}});
+    location.href="/app";
+  }catch(err){ showErr($("sErr"), err.code); $("sBtn").disabled=false; }
+};
+$("fLogin").onsubmit = async e => {
+  e.preventDefault(); $("lErr").hidden=true; $("lBtn").disabled=true;
+  try{ const r = await api("/api/login",{method:"POST",body:{email:$("lEmail").value,password:$("lPass").value}}); location.href = r.role==="admin"?"/admin":"/app"; }
+  catch(err){ showErr($("lErr"), err.code); $("lBtn").disabled=false; }
+};
+
+render();
+api("/api/public").then(d=>{ plans=d.plans; renderPlans(); }).catch(()=>{});
+</script>
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});</script>
+</body>
+</html>

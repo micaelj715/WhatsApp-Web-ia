@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Admin · Micael Automações</title>
+<meta name="theme-color" content="#0d7a55">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/app.css">
+<style>
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.kpi .val{font-family:var(--display);font-size:1.6rem;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi.main{background:var(--accent);color:var(--accent-ink);border-color:transparent}.kpi.main .label{color:inherit;opacity:.8}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:980px}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}
+td .acts{display:flex;gap:6px;flex-wrap:wrap}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters input,.filters select{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px}
+@media (max-width:760px){.kpis{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><a class="logo" href="/">Micael<span>.</span>Automações</a><p class="muted">Administração</p></div>
+    <button class="btn ghost sm" id="logout" type="button">Sair</button>
+  </div>
+
+  <div class="kpis">
+    <div class="card kpi main"><span class="label">Receita mensal (clientes pagos)</span><span class="val" id="kMrr">–</span></div>
+    <div class="card kpi"><span class="label">Clientes pagos</span><span class="val" id="kPaid">0</span></div>
+    <div class="card kpi"><span class="label">Em teste grátis</span><span class="val" id="kTrial">0</span></div>
+    <div class="card kpi"><span class="label">WhatsApps conectados</span><span class="val" id="kWa">0</span></div>
+  </div>
+
+  <div class="card" id="payCard">
+    <h2>Pagamentos para confirmar</h2>
+    <p class="small muted">Confira no seu PayPal se o dinheiro entrou antes de confirmar. Confirmar libera 1 mês do plano.</p>
+    <div class="table-wrap"><table><thead><tr><th>Data</th><th>Negócio</th><th>E-mail</th><th>Plano</th><th>Valor</th><th>Observação</th><th>Status</th><th></th></tr></thead><tbody id="pays"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="top"><h2>Clientes</h2>
+      <div class="filters"><input type="search" id="q" placeholder="Buscar"><select id="fState"><option value="">Todos</option><option value="trial">Em teste</option><option value="active">Pagos</option><option value="expired">Vencidos</option><option value="suspended">Suspensos</option></select></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Negócio</th><th>Contato</th><th>Plano</th><th>Situação</th><th>WhatsApp</th><th>Respostas no mês</th><th>Ações</th></tr></thead><tbody id="tenants"></tbody></table></div>
+  </div>
+  <p class="msg-error" id="err" hidden></p>
+</div>
+<script src="/i18n.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const PLAN = {ess:"Essencial", pro:"Profissional", com:"Completo"};
+const STATE = {trial:["Teste","pill"], active:["Pago","pill"], expired:["Vencido","pill warn"], suspended:["Suspenso","pill bad"]};
+const WA = {connected:["Conectado","pill"], qr:["Esperando QR","pill warn"], connecting:["Conectando","pill warn"], disconnected:["Desconectado","pill off"]};
+const RATE = {EUR:1, CVE:110.265, BRL:6.3, USD:1.17}; // câmbio aproximado para somar tudo em euros
+const d = s => s ? s.split("-").reverse().join("/") : "–";
+let data = {tenants:[], payments:[]};
+
+async function load(){
+  try{ data = await api("/api/admin/overview"); $("err").hidden = true; render(); }
+  catch(e){ $("err").textContent = "Não consegui carregar os dados."; $("err").hidden = false; }
+}
+function render(){
+  const paid = data.tenants.filter(t => t.state==="active");
+  const mrr = paid.reduce((s,t) => s + t.price / (RATE[t.currency]||1), 0);
+  $("kMrr").textContent = fmtMoney(mrr, "EUR", "pt");
+  $("kPaid").textContent = paid.length;
+  $("kTrial").textContent = data.tenants.filter(t => t.state==="trial").length;
+  $("kWa").textContent = data.tenants.filter(t => t.wa.status==="connected").length;
+
+  $("pays").innerHTML = data.payments.length ? data.payments.map(p => `<tr>
+    <td>${esc(p.created_at.slice(0,16))}</td><td>${esc(p.business)}</td><td>${esc(p.email)}</td><td>${esc(PLAN[p.plan])}</td>
+    <td>${esc(fmtMoney(p.amount, p.currency, "pt"))}</td><td>${esc(p.note)}</td>
+    <td><span class="${p.status==="claimed"?"pill warn":p.status==="confirmed"?"pill":"pill off"}">${p.status==="claimed"?"Aguardando":p.status==="confirmed"?"Confirmado":"Recusado"}</span></td>
+    <td>${p.status==="claimed"?`<div class="acts"><button class="btn sm" data-pay="${p.id}" data-act="confirm">Confirmar</button><button class="btn ghost sm" data-pay="${p.id}" data-act="reject">Recusar</button></div>`:""}</td></tr>`).join("")
+    : `<tr><td colspan="8" class="muted">Nenhum pagamento informado ainda.</td></tr>`;
+
+  const q = $("q").value.trim().toLowerCase(), fs = $("fState").value;
+  const rows = data.tenants.filter(t => (!q || (t.business+" "+t.email+" "+t.name).toLowerCase().includes(q)) && (!fs || t.state===fs));
+  $("tenants").innerHTML = rows.length ? rows.map(t => {
+    const [sl, sc] = STATE[t.state], [wl, wc] = WA[t.wa.status] || WA.disconnected;
+    const until = t.state==="active" ? "até " + d(t.paid_until) : t.state==="trial" ? "até " + d(t.trial_ends) : "";
+    return `<tr>
+      <td><strong>${esc(t.business)}</strong><br><span class="small muted">${esc([t.country, t.lang.toUpperCase()].filter(Boolean).join(" · "))}</span></td>
+      <td>${esc(t.name)}<br><span class="small muted">${esc(t.email)}</span></td>
+      <td>${esc(PLAN[t.plan])}<br><span class="small muted">${esc(fmtMoney(t.price, t.currency, "pt"))}/mês</span></td>
+      <td><span class="${sc}">${sl}</span><br><span class="small muted">${until}</span></td>
+      <td><span class="${wc}">${wl}</span>${t.wa.number?`<br><span class="small muted">+${esc(t.wa.number)}</span>`:""}${t.bot_enabled?"":`<br><span class="small muted">atendente desligado</span>`}</td>
+      <td>${t.usage.toLocaleString("pt-PT")}</td>
+      <td><div class="acts">
+        <button class="btn sm" data-id="${t.id}" data-act="extend">+1 mês pago</button>
+        <button class="btn ghost sm" data-id="${t.id}" data-act="trial">+7 dias de teste</button>
+        ${t.suspended?`<button class="btn ghost sm" data-id="${t.id}" data-act="unsuspend">Reativar</button>`:`<button class="btn ghost sm" data-id="${t.id}" data-act="suspend">Suspender</button>`}
+      </div></td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="muted">Nenhum cliente ainda. Quando alguém se cadastrar no site, aparece aqui.</td></tr>`;
+}
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button[data-act]"); if(!b) return;
+  b.disabled = true;
+  try{
+    if(b.dataset.pay) await api(`/api/admin/payments/${b.dataset.pay}/${b.dataset.act}`,{method:"POST"});
+    else await api(`/api/admin/tenants/${b.dataset.id}`,{method:"POST",body:{action:b.dataset.act, months:1, days:7}});
+    await load();
+  }catch{ $("err").textContent = "A ação não funcionou. Tente de novo."; $("err").hidden = false; b.disabled = false; }
+});
+$("q").oninput = render; $("fState").onchange = render;
+$("logout").onclick = async () => { await api("/api/logout",{method:"POST"}).catch(()=>{}); location.href="/entrar"; };
+load(); setInterval(load, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Atendente com IA no WhatsApp para clínicas, salões, restaurantes e imobiliárias.">
+<meta name="theme-color" content="#0d7a55">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Micael Automações</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: barra com idioma e moeda; hero dividido (promessa + celular com demo); seções em coluna de 1080px; calculadora e formulário em duas colunas */
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --ink:#122a24; --muted:#56706a; --line:#d7e2de;
+  --accent:#0d7a55; --accent-ink:#ffffff; --warm:#b86a12; --soft:#e4efe9;
+  --chat-bg:#e7efe9; --bubble-in:#ffffff; --bubble-out:#d6f2e2;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Figtree","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1714; --surface:#14221e; --ink:#e3eeea; --muted:#94aca5; --line:#26382f;
+  --accent:#3cc48f; --accent-ink:#06140f; --warm:#e8a24f; --soft:#18302a;
+  --chat-bg:#0f1c18; --bubble-in:#1c2d27; --bubble-out:#1d4a37; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1714; --surface:#14221e; --ink:#e3eeea; --muted:#94aca5; --line:#26382f;
+  --accent:#3cc48f; --accent-ink:#06140f; --warm:#e8a24f; --soft:#18302a;
+  --chat-bg:#0f1c18; --bubble-in:#1c2d27; --bubble-out:#1d4a37; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(2.1rem,5vw,3.4rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(1.6rem,3.4vw,2.2rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:var(--accent-ink);font-weight:600;border:0;border-radius:999px;padding:13px 22px;font-size:1rem;cursor:pointer;text-decoration:none;font-family:var(--body)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn[aria-disabled="true"]{opacity:.5;pointer-events:none}
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--warm);outline-offset:2px}
+
+header.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-block:16px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;border-bottom:1px solid transparent}
+.logo{font-family:var(--display);font-weight:800;font-size:1.2rem}
+.logo span{color:var(--accent)}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--muted);font:600 .78rem var(--mono);padding:6px 10px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding-block:32px 64px}
+.hero > div{min-width:0}
+.hero p.lead{font-size:1.15rem;color:var(--muted);margin-top:18px;max-width:36ch}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.compare{display:flex;gap:28px;margin-top:36px;flex-wrap:wrap}
+.compare div{display:flex;flex-direction:column}
+.compare b{font-family:var(--mono);font-size:1.5rem}
+.compare .slow b{color:var(--warm)} .compare .fast b{color:var(--accent)}
+.compare small{color:var(--muted);font-size:.85rem}
+.where{margin-top:28px;font-size:.9rem;color:var(--muted)}
+.where b{color:var(--ink);font-weight:600}
+
+.phone{background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:10px;box-shadow:0 24px 60px -30px rgba(10,40,30,.45);max-width:390px;width:100%;justify-self:center}
+.tabs{display:flex;gap:6px;padding:6px;overflow-x:auto}
+.tab{flex:1;white-space:nowrap;border:0;background:transparent;color:var(--muted);font:600 .82rem var(--body);padding:8px 10px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.chat-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-family:var(--display)}
+.chat-head strong{display:block;font-size:.95rem}
+.chat-head small{color:var(--accent);font-size:.78rem}
+.chat{background:var(--chat-bg);border-radius:18px;height:360px;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:84%;padding:8px 11px 17px;border-radius:12px;font-size:.9rem;position:relative;line-height:1.4;white-space:pre-line}
+.msg.in{align-self:flex-start;background:var(--bubble-out);border-top-left-radius:4px}
+.msg.out{align-self:flex-end;background:var(--bubble-in);border-top-right-radius:4px}
+.msg time{position:absolute;right:9px;bottom:3px;font-size:.66rem;color:var(--muted);font-family:var(--mono)}
+.msg .bot{display:block;font-size:.68rem;font-weight:600;color:var(--accent);margin-bottom:2px}
+.typing{align-self:flex-start;background:var(--bubble-out);padding:10px 14px;border-radius:12px;display:flex;gap:4px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none}}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:10px 4px 4px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 11px;font:500 .8rem var(--body);cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.demo-note{font-size:.75rem;color:var(--muted);text-align:center;padding:6px 0 2px}
+
+section{padding-block:64px;border-top:1px solid var(--line)}
+.sec-head{display:flex;flex-direction:column;gap:10px;margin-bottom:32px;max-width:680px}
+.sec-head p{color:var(--muted)}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.step{display:flex;flex-direction:column;gap:8px}
+.step .n{font-family:var(--mono);font-size:.75rem;color:var(--accent);letter-spacing:.06em;text-transform:uppercase}
+.step p{color:var(--muted)}
+
+.niches{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.niche{background:var(--surface);padding:24px;display:flex;flex-direction:column;gap:8px}
+.niche .pain{color:var(--muted);font-size:.95rem}
+.niche .gain{font-weight:600;color:var(--accent)}
+
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+.calc > div{min-width:0}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.field label{font-weight:600;font-size:.93rem;display:flex;justify-content:space-between;gap:8px}
+.field label output{font-family:var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--accent);width:100%}
+input[type=number],input[type=text],input[type=tel],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:1rem var(--body)}
+.result{background:var(--soft);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:10px}
+.result .big{font-family:var(--display);font-weight:800;font-size:clamp(2rem,5vw,3rem);color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+.result small{color:var(--muted)}
+
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:stretch}
+.plan{border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:12px;background:var(--surface)}
+.plan.best{border:2px solid var(--accent)}
+.plan .tag{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);min-height:1.1em}
+.price{font-family:var(--display);font-size:1.75rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.price span{white-space:nowrap}
+.price small{font-family:var(--body);font-size:.9rem;font-weight:500;color:var(--muted)}
+.setup{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.plan ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:.93rem;flex:1}
+.trial{margin-top:24px;padding:18px 22px;border-radius:14px;background:var(--surface);border:1px dashed var(--accent);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+.trial p{color:var(--muted)}
+
+.faq{max-width:760px}
+details{border-bottom:1px solid var(--line);padding-block:16px}
+summary{cursor:pointer;font-weight:600;font-size:1.02rem}
+details p{margin-top:8px;color:var(--muted)}
+
+.form{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+.form .full{grid-column:1/-1}
+.form .field{margin:0}
+.contact{display:grid;grid-template-columns:.9fr 1.1fr;gap:40px;align-items:start}
+.contact > div{min-width:0}
+.number{font-family:var(--mono);font-size:1.15rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;user-select:all;display:inline-block;margin-top:16px}
+.hint{font-size:.85rem;color:var(--muted);margin-top:10px}
+footer{padding-block:32px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line)}
+
+@media (max-width:860px){
+  .hero,.calc,.contact{grid-template-columns:1fr;gap:32px}
+  .steps,.plans,.niches{grid-template-columns:1fr}
+}
+@media (max-width:520px){ .form{grid-template-columns:1fr} header.top{position:static} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">Micael<span>.</span>Automações</div>
+    <div class="controls">
+      <a class="btn ghost" href="/entrar?modo=entrar" data-t="loginL" style="padding:7px 14px;font-size:.85rem"></a>
+      <div class="seg" id="langs" aria-label="Idioma"></div>
+      <div class="seg" id="curs" aria-label="Moeda"></div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div>
+      <p class="eyebrow" data-t="eyebrow"></p>
+      <h1 style="margin-top:12px" data-t="h1"></h1>
+      <p class="lead" data-t="lead"></p>
+      <div class="ctas">
+        <a class="btn" href="/entrar" data-t="cta1"></a>
+        <a class="btn ghost" href="#planos" data-t="cta2"></a>
+      </div>
+      <div class="compare">
+        <div class="slow"><b data-t="slowB"></b><small data-t="slowS"></small></div>
+        <div class="fast"><b data-t="fastB"></b><small data-t="fastS"></small></div>
+      </div>
+      <p class="where"><b data-t="whereL"></b> <span data-t="whereV"></span></p>
+    </div>
+
+    <div class="phone">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="chat-head">
+        <div class="avatar" id="av">C</div>
+        <div><strong id="biz"></strong><small data-t="online"></small></div>
+      </div>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <div class="chips" id="chips"></div>
+      <p class="demo-note" data-t="demoNote"></p>
+    </div>
+  </div>
+
+  <section>
+    <div class="sec-head"><p class="eyebrow" data-t="howE"></p><h2 data-t="howH"></h2></div>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><p class="eyebrow" data-t="nichE"></p><h2 data-t="nichH"></h2></div>
+    <div class="niches" id="niches"></div>
+  </section>
+
+  <section id="calculadora">
+    <div class="sec-head"><p class="eyebrow" data-t="calcE"></p><h2 data-t="calcH"></h2></div>
+    <div class="calc">
+      <div>
+        <div class="field"><label for="cMsgs"><span data-t="cMsgs"></span><output id="oMsgs"></output></label><input type="range" id="cMsgs" min="5" max="200" step="5" value="30"></div>
+        <div class="field"><label for="cPct"><span data-t="cPct"></span><output id="oPct"></output></label><input type="range" id="cPct" min="5" max="80" step="5" value="25"></div>
+        <div class="field"><label for="cConv"><span data-t="cConv"></span><output id="oConv"></output></label><input type="range" id="cConv" min="1" max="6" step="1" value="2"></div>
+        <div class="field"><label for="cTicket"><span data-t="cTicket"></span><span class="cur-code" id="tCur"></span></label><input type="number" id="cTicket" min="1" step="1" inputmode="decimal"></div>
+      </div>
+      <div class="result">
+        <small data-t="cRes"></small>
+        <div class="big" id="cOut"></div>
+        <p id="cCompare"></p>
+        <small data-t="cNote"></small>
+      </div>
+    </div>
+  </section>
+
+  <section id="planos">
+    <div class="sec-head"><p class="eyebrow" data-t="planE"></p><h2 data-t="planH"></h2><p data-t="planP"></p></div>
+    <div class="plans" id="plans"></div>
+    <div class="trial">
+      <div><h3 data-t="trialH"></h3><p data-t="trialP"></p></div>
+      <a class="btn" href="/entrar" data-t="trialB"></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><p class="eyebrow" data-t="faqE"></p><h2 data-t="faqH"></h2></div>
+    <div class="faq" id="faq"></div>
+  </section>
+
+  <section id="contato">
+    <div class="contact">
+      <div>
+        <p class="eyebrow" data-t="conE"></p>
+        <h2 style="margin-top:10px" data-t="conH"></h2>
+        <p class="hint" data-t="conP"></p>
+        <a class="number" id="num" target="_blank" rel="noopener" hidden></a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-self:center">
+        <a class="btn" href="/entrar" data-t="trialB"></a>
+        <a class="btn ghost" href="/entrar?modo=entrar" data-t="loginL"></a>
+      </div>
+    </div>
+  </section>
+
+  <footer data-t="footer"></footer>
+</div>
+
+<script>
+/* Preços e limites vêm do servidor (src/plans.js); estes são usados se ele não responder */
+let LIMITS = {ess:1500, pro:5000, com:15000};
+let SUPPORT = "";
+
+const CURS = ["CVE","EUR","BRL","USD"];
+const LANGS = ["pt","en","fr","es"];
+const LOCALE = {pt:"pt-PT", en:"en-US", fr:"fr-FR", es:"es-ES"};
+
+/* Preços por moeda: [implantação, mensalidade] */
+const PRICES = {
+  CVE:{ess:[10000,3200], pro:[24000,6500], com:[42000,9800]},
+  EUR:{ess:[90,29],      pro:[220,59],     com:[380,89]},
+  BRL:{ess:[300,97],     pro:[700,197],    com:[1200,297]},
+  USD:{ess:[100,32],     pro:[240,65],     com:[420,99]}
+};
+const TICKET = {CVE:2500, EUR:25, BRL:80, USD:30};
+/* Preços usados nas conversas de demonstração */
+const DP = {
+  clean:{CVE:4500,EUR:40,BRL:150,USD:45}, cut:{CVE:1200,EUR:12,BRL:40,USD:15}, cutbeard:{CVE:1800,EUR:18,BRL:60,USD:22},
+  beard:{CVE:900,EUR:9,BRL:30,USD:10}, fee:{CVE:200,EUR:2,BRL:6,USD:3}, pm:{CVE:1200,EUR:11,BRL:42,USD:13},
+  pp:{CVE:1300,EUR:12,BRL:45,USD:14}, pf:{CVE:1500,EUR:14,BRL:52,USD:16}
+};
+
+function fmt(n, cur){
+  if(cur==="CVE"){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,".") + "$00 CVE"; }
+  const loc = cur==="BRL" ? "pt-BR" : LOCALE[state.lang];
+  return new Intl.NumberFormat(loc,{style:"currency",currency:cur,maximumFractionDigits:0}).format(n);
+}
+
+const T = {
+pt:{eyebrow:"Atendente com IA no WhatsApp",h1:"Seu cliente pergunta às 23h. Seu negócio responde na hora.",
+lead:"Eu configuro um atendente que tira dúvidas, agenda horários e recebe pedidos no seu WhatsApp, 24 horas por dia. Você só entra quando precisa.",
+cta1:"Quero o teste grátis de 7 dias",cta2:"Ver planos",slowB:"horas",slowS:"tempo comum de resposta manual",fastB:"segundos",fastS:"com o atendente automático",
+whereL:"Atendo:",whereV:"Cabo Verde, Portugal, Brasil e qualquer país com WhatsApp, 100% online.",
+online:"online · responde na hora",bot:"Atendente automático",demoNote:"Demonstração com negócios fictícios. Toque numa pergunta.",
+howE:"Como funciona",howH:"Pronto em poucos dias, sem você mexer em nada técnico",
+steps:[["Conversa de 20 minutos","Você me conta as perguntas que mais recebe, seus preços, horários e como gosta de atender."],["Eu monto e testo","Configuro o atendente com as informações do seu negócio e ajusto o jeito de falar até ficar com a sua cara."],["Você usa 7 dias grátis","Ele atende seus clientes de verdade. Se gostar, continua. Se não, não paga nada."]],
+stepN:"Passo",
+nichE:"Para quem é",nichH:"Feito para quem vive no WhatsApp com o cliente",
+niches:[["Clínicas e dentistas","Paciente pergunta preço à noite e ninguém responde. Consultas esquecidas viram faltas.","Resposta na hora e confirmação automática na véspera."],["Salões e barbearias","Você está atendendo e o celular não para de apitar.","O cliente escolhe o horário sozinho e recebe lembrete."],["Restaurantes e delivery","No pico, as mesmas perguntas: cardápio, taxa, tempo de entrega.","Cardápio, taxa e pedido guiado, sem ninguém parado no celular."],["Imobiliárias e corretores","Contato que espera resposta vai para o próximo anúncio.","Todo contato respondido e qualificado antes de chegar ao corretor."]],
+calcE:"Calculadora",calcH:"Quanto você perde com mensagens sem resposta?",
+cMsgs:"Mensagens de clientes por dia",cPct:"Quantas ficam sem resposta rápida",cConv:"De cada 10 sem resposta, quantas comprariam",cTicket:"Valor médio de uma venda",
+cRes:"Vendas que podem estar escapando por mês",cNote:"Estimativa feita com os números acima. Ajuste para o seu negócio.",cCmp:"O plano Profissional custa {p} por mês.",
+planE:"Planos",planH:"Uma mensalidade menor que um dia de funcionário",planP:"Implantação cobrada uma vez. Manutenção e ajustes inclusos na mensalidade. Sem fidelidade.",
+month:"/mês",setup:"Implantação",best:"Mais escolhido",
+plans:{ess:["Essencial",["Atendente IA no WhatsApp","Preços, horários e endereço","Passa a conversa para você quando precisa"]],pro:["Profissional",["Tudo do Essencial","Agendamento automático","Lembretes para reduzir faltas","Perfil no Google otimizado"]],com:["Completo",["Tudo do Profissional","Site de uma página","Campanha mensal para chamar clientes antigos"]]},
+trialH:"Teste grátis de 7 dias",trialP:"Clientes fundadores ganham 50% de desconto na implantação.",trialB:"Quero testar",
+faqE:"Dúvidas",faqH:"Perguntas que todo dono faz",
+faq:[["Meus clientes preferem falar com gente.","O atendente responde na hora e passa a conversa para você quando o assunto pede. O cliente não fica esperando e você só entra no que importa."],["Não entendo de tecnologia.","Não precisa. Eu configuro tudo e você continua usando o WhatsApp do jeito de sempre."],["E se der problema?","A manutenção está na mensalidade. Você me chama e eu ajusto."],["Tem fidelidade?","Não. Você pode cancelar quando quiser."],["Funciona no meu país?","Sim. Funciona em qualquer país onde seus clientes usam WhatsApp, e você paga na sua moeda."]],
+conE:"Contato",conH:"Peça seu teste grátis",conP:"Preencha e a mensagem abre pronta no WhatsApp. Ou me chame direto:",
+fName:"Seu nome",fBiz:"Nome do negócio",fType:"Tipo de negócio",fCountry:"País",fPlan:"Plano de interesse",fSend:"Enviar pelo WhatsApp",
+types:["Clínica / dentista","Salão / barbearia","Restaurante / delivery","Imobiliária","Outro"],
+countries:["Cabo Verde","Portugal","Brasil","Estados Unidos","Outro"],
+noNum:"Número ainda não configurado",sendHint:"Abre o WhatsApp numa nova aba.",
+msg:"Olá, Micael! Quero o teste grátis de 7 dias.\nNome: {n}\nNegócio: {b}\nTipo: {t}\nPaís: {c}\nPlano: {p}",
+footer:"Micael Automações · Atendimento automático para negócios locais",
+tabs:["Clínica","Barbearia","Delivery","Imobiliária"]},
+
+en:{eyebrow:"AI assistant on WhatsApp",h1:"Your customer asks at 11 pm. Your business answers instantly.",
+lead:"I set up an assistant that answers questions, books appointments and takes orders on your WhatsApp, 24 hours a day. You step in only when needed.",
+cta1:"Start my 7-day free trial",cta2:"See plans",slowB:"hours",slowS:"typical manual reply time",fastB:"seconds",fastS:"with the automatic assistant",
+whereL:"Serving:",whereV:"Cape Verde, Portugal, Brazil and any country with WhatsApp, fully online.",
+online:"online · replies instantly",bot:"Automatic assistant",demoNote:"Demo with fictional businesses. Tap a question.",
+howE:"How it works",howH:"Live in a few days, with nothing technical for you to do",
+steps:[["A 20-minute call","You tell me the questions you get most, your prices, hours and how you like to talk to customers."],["I build and test it","I set the assistant up with your business details and tune its tone until it sounds like you."],["Use it free for 7 days","It serves your real customers. Keep it if you like it; if not, you pay nothing."]],
+stepN:"Step",
+nichE:"Who it's for",nichH:"Built for businesses that live on WhatsApp",
+niches:[["Clinics and dentists","Patients ask for prices at night and nobody replies. Forgotten appointments become no-shows.","Instant replies and automatic confirmation the day before."],["Salons and barbers","You're with a client and your phone keeps buzzing.","Customers book on their own and get a reminder."],["Restaurants and delivery","At peak time, the same questions: menu, fees, delivery time.","Menu, fees and guided ordering, with no one stuck on the phone."],["Real estate agents","A lead left waiting moves on to the next listing.","Every lead answered and qualified before it reaches the agent."]],
+calcE:"Calculator",calcH:"How much do unanswered messages cost you?",
+cMsgs:"Customer messages per day",cPct:"How many don't get a quick reply",cConv:"Of every 10 unanswered, how many would buy",cTicket:"Average sale value",
+cRes:"Sales that may be slipping away each month",cNote:"Estimate based on the numbers above. Adjust them to your business.",cCmp:"The Professional plan costs {p} a month.",
+planE:"Plans",planH:"A monthly fee lower than one day of staff wages",planP:"One-time setup fee. Maintenance and tweaks included. No lock-in.",
+month:"/month",setup:"Setup",best:"Most popular",
+plans:{ess:["Essential",["AI assistant on WhatsApp","Prices, hours and address","Hands the chat to you when needed"]],pro:["Professional",["Everything in Essential","Automatic booking","Reminders to cut no-shows","Optimized Google profile"]],com:["Complete",["Everything in Professional","One-page website","Monthly campaign to win back past customers"]]},
+trialH:"7-day free trial",trialP:"Founding clients get 50% off the setup fee.",trialB:"Try it",
+faqE:"Questions",faqH:"What every owner asks",
+faq:[["My customers prefer talking to a person.","The assistant replies instantly and hands the chat to you when it matters. Customers don't wait, and you only step in where you're needed."],["I'm not good with technology.","You don't need to be. I set everything up and you keep using WhatsApp as usual."],["What if something breaks?","Maintenance is included in the monthly fee. Message me and I'll fix it."],["Is there a contract?","No. You can cancel anytime."],["Does it work in my country?","Yes. It works wherever your customers use WhatsApp, and you pay in your currency."]],
+conE:"Contact",conH:"Request your free trial",conP:"Fill this in and the message opens ready in WhatsApp. Or message me directly:",
+fName:"Your name",fBiz:"Business name",fType:"Type of business",fCountry:"Country",fPlan:"Plan you're interested in",fSend:"Send via WhatsApp",
+types:["Clinic / dentist","Salon / barber","Restaurant / delivery","Real estate","Other"],
+countries:["Cape Verde","Portugal","Brazil","United States","Other"],
+noNum:"Number not set up yet",sendHint:"Opens WhatsApp in a new tab.",
+msg:"Hi Micael! I'd like the 7-day free trial.\nName: {n}\nBusiness: {b}\nType: {t}\nCountry: {c}\nPlan: {p}",
+footer:"Micael Automações · Automatic customer service for local businesses",
+tabs:["Clinic","Barber","Delivery","Real estate"]},
+
+fr:{eyebrow:"Assistant IA sur WhatsApp",h1:"Votre client écrit à 23h. Votre commerce répond aussitôt.",
+lead:"Je configure un assistant qui répond aux questions, prend les rendez-vous et les commandes sur votre WhatsApp, 24h/24. Vous n'intervenez que si nécessaire.",
+cta1:"Essai gratuit de 7 jours",cta2:"Voir les offres",slowB:"heures",slowS:"délai habituel de réponse manuelle",fastB:"secondes",fastS:"avec l'assistant automatique",
+whereL:"J'interviens :",whereV:"Cap-Vert, Portugal, Brésil et tout pays où l'on utilise WhatsApp, 100 % en ligne.",
+online:"en ligne · répond aussitôt",bot:"Assistant automatique",demoNote:"Démo avec des commerces fictifs. Touchez une question.",
+howE:"Comment ça marche",howH:"Opérationnel en quelques jours, sans rien de technique pour vous",
+steps:[["Un échange de 20 minutes","Vous me donnez les questions les plus fréquentes, vos prix, vos horaires et votre façon d'accueillir les clients."],["Je le configure et le teste","Je configure l'assistant avec les informations de votre commerce et j'ajuste le ton jusqu'à ce qu'il vous ressemble."],["7 jours gratuits","Il répond à vos vrais clients. S'il vous plaît, vous continuez. Sinon, vous ne payez rien."]],
+stepN:"Étape",
+nichE:"Pour qui",nichH:"Pensé pour ceux qui vivent sur WhatsApp avec leurs clients",
+niches:[["Cliniques et dentistes","Les patients demandent les prix le soir et personne ne répond. Les rendez-vous oubliés deviennent des absences.","Réponse immédiate et confirmation automatique la veille."],["Salons et barbiers","Vous êtes avec un client et le téléphone n'arrête pas de sonner.","Le client réserve seul et reçoit un rappel."],["Restaurants et livraison","Au coup de feu, toujours les mêmes questions : carte, frais, délai.","Carte, frais et commande guidée, sans personne bloqué au téléphone."],["Agences immobilières","Un prospect qui attend passe à l'annonce suivante.","Chaque prospect reçoit une réponse et est qualifié avant l'agent."]],
+calcE:"Calculateur",calcH:"Combien vous coûtent les messages sans réponse ?",
+cMsgs:"Messages clients par jour",cPct:"Combien restent sans réponse rapide",cConv:"Sur 10 sans réponse, combien achèteraient",cTicket:"Valeur moyenne d'une vente",
+cRes:"Ventes qui peuvent vous échapper chaque mois",cNote:"Estimation basée sur les chiffres ci-dessus. Ajustez-les à votre activité.",cCmp:"L'offre Professionnel coûte {p} par mois.",
+planE:"Offres",planH:"Un abonnement inférieur à une journée de salaire",planP:"Mise en place facturée une seule fois. Maintenance et ajustements inclus. Sans engagement.",
+month:"/mois",setup:"Mise en place",best:"Le plus choisi",
+plans:{ess:["Essentiel",["Assistant IA sur WhatsApp","Prix, horaires et adresse","Vous passe la conversation si besoin"]],pro:["Professionnel",["Tout l'Essentiel","Prise de rendez-vous automatique","Rappels contre les absences","Fiche Google optimisée"]],com:["Complet",["Tout le Professionnel","Site d'une page","Campagne mensuelle pour relancer les anciens clients"]]},
+trialH:"Essai gratuit de 7 jours",trialP:"Les clients fondateurs ont 50 % de réduction sur la mise en place.",trialB:"Essayer",
+faqE:"Questions",faqH:"Ce que tout gérant demande",
+faq:[["Mes clients préfèrent parler à quelqu'un.","L'assistant répond tout de suite et vous passe la conversation quand c'est utile. Le client n'attend pas et vous intervenez seulement là où il faut."],["Je ne suis pas à l'aise avec la technologie.","Pas besoin. Je configure tout et vous continuez à utiliser WhatsApp comme d'habitude."],["Et en cas de problème ?","La maintenance est incluse dans l'abonnement. Écrivez-moi et je corrige."],["Y a-t-il un engagement ?","Non. Vous pouvez arrêter quand vous voulez."],["Ça marche dans mon pays ?","Oui. Partout où vos clients utilisent WhatsApp, et vous payez dans votre monnaie."]],
+conE:"Contact",conH:"Demandez votre essai gratuit",conP:"Remplissez le formulaire et le message s'ouvre prêt sur WhatsApp. Ou écrivez-moi directement :",
+fName:"Votre nom",fBiz:"Nom du commerce",fType:"Type d'activité",fCountry:"Pays",fPlan:"Offre qui vous intéresse",fSend:"Envoyer par WhatsApp",
+types:["Clinique / dentiste","Salon / barbier","Restaurant / livraison","Immobilier","Autre"],
+countries:["Cap-Vert","Portugal","Brésil","États-Unis","Autre"],
+noNum:"Numéro pas encore configuré",sendHint:"Ouvre WhatsApp dans un nouvel onglet.",
+msg:"Bonjour Micael ! Je voudrais l'essai gratuit de 7 jours.\nNom : {n}\nCommerce : {b}\nType : {t}\nPays : {c}\nOffre : {p}",
+footer:"Micael Automações · Accueil client automatique pour commerces locaux",
+tabs:["Clinique","Barbier","Livraison","Immobilier"]},
+
+es:{eyebrow:"Asistente con IA en WhatsApp",h1:"Tu cliente pregunta a las 23h. Tu negocio responde al instante.",
+lead:"Configuro un asistente que responde dudas, agenda citas y recibe pedidos en tu WhatsApp, las 24 horas. Tú solo entras cuando hace falta.",
+cta1:"Quiero la prueba gratis de 7 días",cta2:"Ver planes",slowB:"horas",slowS:"tiempo habitual de respuesta manual",fastB:"segundos",fastS:"con el asistente automático",
+whereL:"Atiendo:",whereV:"Cabo Verde, Portugal, Brasil y cualquier país con WhatsApp, 100 % online.",
+online:"en línea · responde al instante",bot:"Asistente automático",demoNote:"Demostración con negocios ficticios. Toca una pregunta.",
+howE:"Cómo funciona",howH:"Listo en pocos días, sin que toques nada técnico",
+steps:[["Charla de 20 minutos","Me cuentas las preguntas que más recibes, tus precios, horarios y cómo te gusta atender."],["Lo monto y lo pruebo","Configuro el asistente con la información de tu negocio y ajusto el tono hasta que suene como tú."],["Lo usas 7 días gratis","Atiende a tus clientes reales. Si te gusta, sigues. Si no, no pagas nada."]],
+stepN:"Paso",
+nichE:"Para quién es",nichH:"Hecho para quien vive en WhatsApp con sus clientes",
+niches:[["Clínicas y dentistas","El paciente pregunta precios de noche y nadie responde. Las citas olvidadas se convierten en ausencias.","Respuesta al instante y confirmación automática el día anterior."],["Peluquerías y barberías","Estás atendiendo y el móvil no para de sonar.","El cliente elige su hora solo y recibe un recordatorio."],["Restaurantes y delivery","En hora punta, las mismas preguntas: carta, envío, tiempo de entrega.","Carta, envío y pedido guiado, sin nadie pegado al móvil."],["Inmobiliarias","Un contacto que espera se va al siguiente anuncio.","Cada contacto respondido y calificado antes de llegar al agente."]],
+calcE:"Calculadora",calcH:"¿Cuánto pierdes con mensajes sin respuesta?",
+cMsgs:"Mensajes de clientes por día",cPct:"Cuántos se quedan sin respuesta rápida",cConv:"De cada 10 sin respuesta, cuántos comprarían",cTicket:"Valor medio de una venta",
+cRes:"Ventas que pueden escaparse cada mes",cNote:"Estimación hecha con los números de arriba. Ajústalos a tu negocio.",cCmp:"El plan Profesional cuesta {p} al mes.",
+planE:"Planes",planH:"Una cuota menor que un día de sueldo",planP:"Implementación cobrada una vez. Mantenimiento y ajustes incluidos. Sin permanencia.",
+month:"/mes",setup:"Implementación",best:"El más elegido",
+plans:{ess:["Esencial",["Asistente IA en WhatsApp","Precios, horarios y dirección","Te pasa la conversación cuando hace falta"]],pro:["Profesional",["Todo lo del Esencial","Agenda automática","Recordatorios para reducir ausencias","Perfil de Google optimizado"]],com:["Completo",["Todo lo del Profesional","Web de una página","Campaña mensual para recuperar clientes antiguos"]]},
+trialH:"Prueba gratis de 7 días",trialP:"Los clientes fundadores tienen 50 % de descuento en la implementación.",trialB:"Quiero probar",
+faqE:"Dudas",faqH:"Lo que todo dueño pregunta",
+faq:[["Mis clientes prefieren hablar con una persona.","El asistente responde al instante y te pasa la conversación cuando hace falta. El cliente no espera y tú solo entras en lo importante."],["No entiendo de tecnología.","No hace falta. Yo lo configuro todo y tú sigues usando WhatsApp como siempre."],["¿Y si algo falla?","El mantenimiento está incluido en la cuota. Me escribes y lo arreglo."],["¿Hay permanencia?","No. Puedes cancelar cuando quieras."],["¿Funciona en mi país?","Sí. Funciona en cualquier país donde tus clientes usen WhatsApp, y pagas en tu moneda."]],
+conE:"Contacto",conH:"Pide tu prueba gratis",conP:"Rellena el formulario y el mensaje se abre listo en WhatsApp. O escríbeme directamente:",
+fName:"Tu nombre",fBiz:"Nombre del negocio",fType:"Tipo de negocio",fCountry:"País",fPlan:"Plan que te interesa",fSend:"Enviar por WhatsApp",
+types:["Clínica / dentista","Peluquería / barbería","Restaurante / delivery","Inmobiliaria","Otro"],
+countries:["Cabo Verde","Portugal","Brasil","Estados Unidos","Otro"],
+noNum:"Número aún no configurado",sendHint:"Abre WhatsApp en una pestaña nueva.",
+msg:"¡Hola, Micael! Quiero la prueba gratis de 7 días.\nNombre: {n}\nNegocio: {b}\nTipo: {t}\nPaís: {c}\nPlan: {p}",
+footer:"Micael Automações · Atención automática para negocios locales",
+tabs:["Clínica","Barbería","Delivery","Inmobiliaria"]}
+};
+
+/* Textos da plataforma (sobrescrevem os de cima) */
+const OV = {"pt": {"lead": "Conecte o WhatsApp do seu negócio em 2 minutos. O atendente com IA tira dúvidas, anota pedidos e agendamentos e responde seus clientes 24 horas por dia. Você só entra quando precisa.", "howH": "Funcionando hoje, sem instalar nada", "steps": [["Crie sua conta", "Leva 1 minuto e não pedimos cartão. Você ganha 7 dias grátis."], ["Escaneie o QR code", "Igual ao WhatsApp Web. Depois escreva seus preços, horários e perguntas frequentes."], ["O atendente começa a responder", "Pedidos e agendamentos chegam resumidos no seu WhatsApp. Quando você responde uma conversa, ele fica calado nela."]], "planP": "Sem taxa de adesão e sem fidelidade. Pague pelo PayPal com cartão de crédito.", "plans": {"ess": ["Essencial", ["Atendente IA no seu WhatsApp", "Resumo de pedidos e agendamentos no seu WhatsApp"]], "pro": ["Profissional", ["Tudo do Essencial", "Ajuda por chamada para configurar"]], "com": ["Completo", ["Tudo do Profissional", "Suporte prioritário no WhatsApp"]]}, "perMonth": "{n} respostas por mês", "startBtn": "Começar teste grátis", "loginL": "Entrar", "trialP": "7 dias grátis com todas as funções. Não pedimos cartão.", "trialB": "Criar conta grátis", "cta1": "Criar conta e testar grátis", "faq": [["Meus clientes preferem falar com gente.", "O atendente responde na hora e passa a conversa para você quando o assunto pede. O cliente não fica esperando e você só entra no que importa."], ["Não entendo de tecnologia.", "Você só escaneia um QR code, igual ao WhatsApp Web, e escreve as informações do seu negócio. Se precisar, eu te ajudo por chamada."], ["Continuo usando meu WhatsApp normalmente?", "Sim. O atendente funciona como o WhatsApp Web. Quando você responde uma conversa, ele fica calado nela pelo tempo que você escolher."], ["Tem fidelidade?", "Não. Você paga mês a mês e pode parar quando quiser."], ["Funciona no meu país?", "Sim. Funciona em qualquer país onde seus clientes usam WhatsApp, e você vê o preço na sua moeda."]], "conH": "Comece seu teste grátis agora", "conP": "Crie sua conta em 1 minuto. Se tiver dúvidas, fale comigo no WhatsApp:"}, "en": {"lead": "Connect your business WhatsApp in 2 minutes. The AI assistant answers questions, takes orders and bookings, and replies to your customers 24 hours a day. You step in only when needed.", "howH": "Up and running today, nothing to install", "steps": [["Create your account", "Takes 1 minute, no card needed. You get 7 days free."], ["Scan the QR code", "Just like WhatsApp Web. Then write your prices, hours and FAQ."], ["The assistant starts replying", "Orders and bookings reach your WhatsApp as a summary. When you reply to a chat, it stays quiet there."]], "planP": "No setup fee, no lock-in. Pay with PayPal by credit card.", "plans": {"ess": ["Essential", ["AI assistant on your WhatsApp", "Order and booking summaries on your WhatsApp"]], "pro": ["Professional", ["Everything in Essential", "Setup help over a call"]], "com": ["Complete", ["Everything in Professional", "Priority support on WhatsApp"]]}, "perMonth": "{n} replies per month", "startBtn": "Start free trial", "loginL": "Log in", "trialP": "7 days free with every feature. No card required.", "trialB": "Create free account", "cta1": "Create account and try free", "faq": [["My customers prefer talking to a person.", "The assistant replies instantly and hands the chat to you when it matters. Customers don't wait, and you only step in where you're needed."], ["I'm not good with technology.", "You just scan a QR code, like WhatsApp Web, and write your business details. If you need, I'll help you over a call."], ["Can I keep using my WhatsApp as usual?", "Yes. The assistant works like WhatsApp Web. When you reply to a chat, it stays quiet in it for as long as you choose."], ["Is there a contract?", "No. You pay month by month and can stop anytime."], ["Does it work in my country?", "Yes. It works wherever your customers use WhatsApp, and you see the price in your currency."]], "conH": "Start your free trial now", "conP": "Create your account in 1 minute. Questions? Message me on WhatsApp:"}, "fr": {"lead": "Connectez le WhatsApp de votre commerce en 2 minutes. L'assistant IA répond aux questions, prend commandes et rendez-vous et répond à vos clients 24h/24. Vous n'intervenez que si nécessaire.", "howH": "Opérationnel aujourd'hui, rien à installer", "steps": [["Créez votre compte", "1 minute, sans carte bancaire. Vous avez 7 jours gratuits."], ["Scannez le QR code", "Comme WhatsApp Web. Puis écrivez vos prix, horaires et questions fréquentes."], ["L'assistant commence à répondre", "Commandes et rendez-vous arrivent résumés sur votre WhatsApp. Quand vous répondez à une conversation, il s'y tait."]], "planP": "Sans frais d'inscription ni engagement. Paiement par PayPal avec carte bancaire.", "plans": {"ess": ["Essentiel", ["Assistant IA sur votre WhatsApp", "Résumé des commandes et rendez-vous sur votre WhatsApp"]], "pro": ["Professionnel", ["Tout l'Essentiel", "Aide à la configuration par appel"]], "com": ["Complet", ["Tout le Professionnel", "Support prioritaire sur WhatsApp"]]}, "perMonth": "{n} réponses par mois", "startBtn": "Commencer l'essai", "loginL": "Se connecter", "trialP": "7 jours gratuits avec toutes les fonctions. Sans carte bancaire.", "trialB": "Créer un compte gratuit", "cta1": "Créer un compte et essayer", "faq": [["Mes clients préfèrent parler à quelqu'un.", "L'assistant répond tout de suite et vous passe la conversation quand c'est utile. Le client n'attend pas et vous intervenez seulement là où il faut."], ["Je ne suis pas à l'aise avec la technologie.", "Vous scannez simplement un QR code, comme WhatsApp Web, et écrivez les informations du commerce. Si besoin, je vous aide par appel."], ["Je garde mon WhatsApp comme d'habitude ?", "Oui. L'assistant fonctionne comme WhatsApp Web. Quand vous répondez à une conversation, il s'y tait le temps que vous choisissez."], ["Y a-t-il un engagement ?", "Non. Vous payez mois par mois et arrêtez quand vous voulez."], ["Ça marche dans mon pays ?", "Oui. Partout où vos clients utilisent WhatsApp, et vous voyez le prix dans votre monnaie."]], "conH": "Commencez votre essai gratuit", "conP": "Créez votre compte en 1 minute. Une question ? Écrivez-moi sur WhatsApp :"}, "es": {"lead": "Conecta el WhatsApp de tu negocio en 2 minutos. El asistente con IA responde dudas, toma pedidos y citas y atiende a tus clientes las 24 horas. Tú solo entras cuando hace falta.", "howH": "Funcionando hoy, sin instalar nada", "steps": [["Crea tu cuenta", "Tarda 1 minuto y no pedimos tarjeta. Tienes 7 días gratis."], ["Escanea el código QR", "Igual que WhatsApp Web. Luego escribe tus precios, horarios y preguntas frecuentes."], ["El asistente empieza a responder", "Pedidos y citas te llegan resumidos a tu WhatsApp. Cuando respondes una conversación, se calla en ella."]], "planP": "Sin cuota de alta ni permanencia. Paga con PayPal con tarjeta de crédito.", "plans": {"ess": ["Esencial", ["Asistente IA en tu WhatsApp", "Resumen de pedidos y citas en tu WhatsApp"]], "pro": ["Profesional", ["Todo lo del Esencial", "Ayuda por llamada para configurarlo"]], "com": ["Completo", ["Todo lo del Profesional", "Soporte prioritario por WhatsApp"]]}, "perMonth": "{n} respuestas al mes", "startBtn": "Empezar prueba gratis", "loginL": "Entrar", "trialP": "7 días gratis con todas las funciones. Sin tarjeta.", "trialB": "Crear cuenta gratis", "cta1": "Crear cuenta y probar gratis", "faq": [["Mis clientes prefieren hablar con una persona.", "El asistente responde al instante y te pasa la conversación cuando hace falta. El cliente no espera y tú solo entras en lo importante."], ["No entiendo de tecnología.", "Solo escaneas un código QR, como en WhatsApp Web, y escribes la información de tu negocio. Si lo necesitas, te ayudo por llamada."], ["¿Sigo usando mi WhatsApp normal?", "Sí. El asistente funciona como WhatsApp Web. Cuando respondes una conversación, se calla en ella el tiempo que elijas."], ["¿Hay permanencia?", "No. Pagas mes a mes y puedes parar cuando quieras."], ["¿Funciona en mi país?", "Sí. Funciona en cualquier país donde tus clientes usen WhatsApp, y ves el precio en tu moneda."]], "conH": "Empieza tu prueba gratis ahora", "conP": "Crea tu cuenta en 1 minuto. ¿Dudas? Escríbeme por WhatsApp:"}};
+for (const l in OV) Object.assign(T[l], OV[l]);
+
+/* Conversas de demonstração: [início, perguntas/respostas]. {x} = preço na moeda escolhida */
+const DEMOS = {
+clinica:{name:"Clínica Sorriso",av:"C",time:"23:14",
+ pt:[["Oi, quanto custa uma limpeza?","Oi! A limpeza com avaliação sai por {clean} e leva uns 40 minutos. Quer que eu veja um horário pra você?"],[["Tem horário amanhã?","Tenho amanhã às 9h, 14h30 ou 17h. Qual fica melhor?"],["Aceita seguro de saúde?","Aceitamos alguns seguros. Me diz qual é o seu que eu confirmo agora."],["Falar com a recepção","Claro! Já avisei a recepção, e amanhã às 8h alguém te chama por aqui."]]],
+ en:[["Hi, how much is a dental cleaning?","Hi! A cleaning with check-up is {clean} and takes about 40 minutes. Shall I find you a time?"],[["Any time tomorrow?","Tomorrow I have 9:00, 14:30 or 17:00. Which works best?"],["Do you take insurance?","We accept several insurance plans. Tell me yours and I'll confirm right now."],["Talk to reception","Sure! I've let reception know, and someone will message you here tomorrow at 8:00."]]],
+ fr:[["Bonjour, combien coûte un détartrage ?","Bonjour ! Un détartrage avec bilan coûte {clean} et dure environ 40 minutes. Je vous cherche un créneau ?"],[["Un créneau demain ?","Demain j'ai 9h, 14h30 ou 17h. Lequel vous convient ?"],["Vous acceptez les assurances ?","Nous acceptons plusieurs assurances. Dites-moi la vôtre et je vérifie tout de suite."],["Parler à l'accueil","Bien sûr ! J'ai prévenu l'accueil, quelqu'un vous écrira ici demain à 8h."]]],
+ es:[["Hola, ¿cuánto cuesta una limpieza dental?","¡Hola! La limpieza con revisión cuesta {clean} y dura unos 40 minutos. ¿Te busco un horario?"],[["¿Hay hora mañana?","Mañana tengo a las 9:00, 14:30 o 17:00. ¿Cuál te viene mejor?"],["¿Aceptan seguro?","Aceptamos varios seguros médicos. Dime el tuyo y lo confirmo ahora."],["Hablar con recepción","¡Claro! Ya avisé a recepción y mañana a las 8:00 alguien te escribe por aquí."]]]},
+salao:{name:"Barbearia Navalha",av:"B",time:"17:02",
+ pt:[["Tem vaga pra corte hoje?","Tem sim! Hoje às 18h ou 19h30. Corte {cut}, corte + barba {cutbeard}. Qual prefere?"],[["18h, só corte","Fechado! Corte hoje às 18h. Te mando um lembrete 1h antes. Até lá!"],["Quanto é só a barba?","A barba sozinha sai {beard}."],["Formas de pagamento?","Aceitamos cartão, dinheiro e transferência."]]],
+ en:[["Any slot for a haircut today?","Yes! Today at 18:00 or 19:30. Haircut {cut}, haircut + beard {cutbeard}. Which one?"],[["18:00, haircut only","Done! Haircut today at 18:00. I'll send you a reminder 1 hour before. See you!"],["How much for just the beard?","Beard only is {beard}."],["Payment methods?","We take card, cash and bank transfer."]]],
+ fr:[["Une place pour une coupe aujourd'hui ?","Oui ! Aujourd'hui à 18h ou 19h30. Coupe {cut}, coupe + barbe {cutbeard}. Vous préférez ?"],[["18h, coupe seule","C'est noté ! Coupe aujourd'hui à 18h. Je vous envoie un rappel 1h avant. À tout à l'heure !"],["Combien pour la barbe seule ?","La barbe seule coûte {beard}."],["Moyens de paiement ?","Nous acceptons carte, espèces et virement."]]],
+ es:[["¿Hay hueco para un corte hoy?","¡Sí! Hoy a las 18:00 o 19:30. Corte {cut}, corte + barba {cutbeard}. ¿Cuál prefieres?"],[["18:00, solo corte","¡Listo! Corte hoy a las 18:00. Te envío un recordatorio 1 hora antes. ¡Hasta luego!"],["¿Cuánto solo la barba?","Solo la barba cuesta {beard}."],["¿Formas de pago?","Aceptamos tarjeta, efectivo y transferencia."]]]},
+restaurante:{name:"Pizzaria Forno Bom",av:"P",time:"20:31",
+ pt:[["Boa noite, vocês entregam no centro?","Boa noite! Entregamos sim. Taxa de {fee} e chega em uns 40 minutos. Quer ver o cardápio?"],[["Ver o cardápio","Pizzas grandes:\n• Margherita {pm}\n• Pepperoni {pp}\n• Frango {pf}\nQual vai querer?"],["Uma pepperoni","Anotado: 1 pepperoni grande ({pp}) + entrega ({fee}) = {ptotal}. Me passa o endereço e a forma de pagamento?"],["Até que horas abre?","Atendemos até meia-noite, todos os dias."]]],
+ en:[["Good evening, do you deliver downtown?","Good evening! Yes, we do. Delivery is {fee} and takes about 40 minutes. Want to see the menu?"],[["See the menu","Large pizzas:\n• Margherita {pm}\n• Pepperoni {pp}\n• Chicken {pf}\nWhat would you like?"],["One pepperoni","Got it: 1 large pepperoni ({pp}) + delivery ({fee}) = {ptotal}. Could you send your address and payment method?"],["What time do you close?","We're open until midnight, every day."]]],
+ fr:[["Bonsoir, vous livrez au centre-ville ?","Bonsoir ! Oui. Livraison {fee}, environ 40 minutes. Vous voulez voir la carte ?"],[["Voir la carte","Grandes pizzas :\n• Margherita {pm}\n• Pepperoni {pp}\n• Poulet {pf}\nQue souhaitez-vous ?"],["Une pepperoni","C'est noté : 1 grande pepperoni ({pp}) + livraison ({fee}) = {ptotal}. Votre adresse et le moyen de paiement ?"],["Vous fermez à quelle heure ?","Nous sommes ouverts jusqu'à minuit, tous les jours."]]],
+ es:[["Buenas noches, ¿hacen envíos al centro?","¡Buenas noches! Sí. El envío cuesta {fee} y tarda unos 40 minutos. ¿Quieres ver la carta?"],[["Ver la carta","Pizzas grandes:\n• Margarita {pm}\n• Pepperoni {pp}\n• Pollo {pf}\n¿Cuál quieres?"],["Una pepperoni","Anotado: 1 pepperoni grande ({pp}) + envío ({fee}) = {ptotal}. ¿Me pasas la dirección y la forma de pago?"],["¿Hasta qué hora abren?","Abrimos hasta medianoche, todos los días."]]]},
+imobiliaria:{name:"Casa Certa Imóveis",av:"I",time:"09:47",
+ pt:[["Vi o anúncio do apartamento de 2 quartos, ainda está disponível?","Está sim! Pra te mostrar as melhores opções: você quer comprar ou alugar?"],[["Comprar, com crédito","Ótimo! Até quanto pretende investir e qual bairro prefere? Já separo opções que cabem no seu crédito."],["Quero visitar","Posso agendar a visita com o corretor: sábado às 10h ou segunda às 17h. Qual prefere?"],["Aceita animais?","Esse apartamento aceita animais de pequeno porte. Quer agendar uma visita?"]]],
+ en:[["I saw the 2-bedroom apartment ad, is it still available?","It is! To show you the best options: are you looking to buy or rent?"],[["Buy, with a mortgage","Great! What's your budget and preferred area? I'll pick options that fit your financing."],["I'd like a viewing","I can book a viewing with the agent: Saturday 10:00 or Monday 17:00. Which do you prefer?"],["Are pets allowed?","This apartment allows small pets. Shall I book a viewing?"]]],
+ fr:[["J'ai vu l'annonce de l'appartement 2 chambres, il est toujours disponible ?","Oui ! Pour vous proposer les meilleures options : vous souhaitez acheter ou louer ?"],[["Acheter, avec un crédit","Parfait ! Quel budget et quel quartier préférez-vous ? Je sélectionne des biens adaptés à votre financement."],["Je veux visiter","Je peux planifier une visite avec l'agent : samedi 10h ou lundi 17h. Que préférez-vous ?"],["Animaux acceptés ?","Cet appartement accepte les petits animaux. Je planifie une visite ?"]]],
+ es:[["Vi el anuncio del piso de 2 habitaciones, ¿sigue disponible?","¡Sí! Para mostrarte las mejores opciones: ¿quieres comprar o alquilar?"],[["Comprar, con hipoteca","¡Genial! ¿Cuál es tu presupuesto y qué zona prefieres? Te separo opciones que encajen con tu financiación."],["Quiero visitarlo","Puedo agendar la visita con el agente: sábado a las 10:00 o lunes a las 17:00. ¿Cuál prefieres?"],["¿Se admiten mascotas?","Este piso admite mascotas pequeñas. ¿Agendo una visita?"]]]}
+};
+const DKEYS = Object.keys(DEMOS);
+
+/* ===== Estado ===== */
+function load(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function save(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function guess(){
+  const nav = (navigator.language||"pt").toLowerCase();
+  let lang = LANGS.find(l => nav.startsWith(l)) || "pt";
+  let cur = nav==="pt-br" ? "BRL" : nav==="pt-cv" || nav==="pt" ? "CVE" : nav.startsWith("pt") ? "EUR" : nav==="en-us" ? "USD" : lang==="en" ? "USD" : "EUR";
+  return {lang, cur};
+}
+const g = guess();
+const state = {
+  lang: LANGS.includes(load("lang")) ? load("lang") : g.lang,
+  cur: CURS.includes(load("cur")) ? load("cur") : g.cur,
+  demo: "clinica", busy:false
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function price(tpl){
+  return tpl.replace(/\{(\w+)\}/g,(m,k)=>{
+    if(k==="ptotal") return fmt(DP.pp[state.cur]+DP.fee[state.cur], state.cur);
+    return DP[k] ? fmt(DP[k][state.cur], state.cur) : m;
+  });
+}
+
+/* ===== Render ===== */
+function renderSwitchers(){
+  $("langs").innerHTML = LANGS.map(l=>`<button type="button" aria-pressed="${l===state.lang}" data-l="${l}">${l.toUpperCase()}</button>`).join("");
+  $("curs").innerHTML = CURS.map(c=>`<button type="button" aria-pressed="${c===state.cur}" data-c="${c}">${c}</button>`).join("");
+}
+function renderText(){
+  const t = T[state.lang];
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-t]").forEach(el=>{ const v=t[el.dataset.t]; if(typeof v==="string") el.textContent=v; });
+  $("steps").innerHTML = t.steps.map((s,i)=>`<div class="step"><span class="n">${esc(t.stepN)} ${i+1}</span><h3>${esc(s[0])}</h3><p>${esc(s[1])}</p></div>`).join("");
+  $("niches").innerHTML = t.niches.map(n=>`<div class="niche"><h3>${esc(n[0])}</h3><p class="pain">${esc(n[1])}</p><p class="gain">${esc(n[2])}</p></div>`).join("");
+  $("faq").innerHTML = t.faq.map(f=>`<details><summary>${esc(f[0])}</summary><p>${esc(f[1])}</p></details>`).join("");
+  $("tabs").innerHTML = DKEYS.map((k,i)=>`<button type="button" class="tab" role="tab" data-k="${k}" aria-selected="${k===state.demo}">${esc(t.tabs[i])}</button>`).join("");
+}
+function renderPrices(){
+  const t = T[state.lang], P = PRICES[state.cur];
+  $("plans").innerHTML = ["ess","pro","com"].map(k=>{
+    const [name, feats] = t.plans[k];
+    return `<div class="plan${k==="pro"?" best":""}"><p class="tag">${k==="pro"?esc(t.best):"&nbsp;"}</p><h3>${esc(name)}</h3>
+      <p class="price"><span>${esc(fmt(P[k][1],state.cur))}</span><small>${esc(t.month)}</small></p>
+      <ul><li><strong>${esc(t.perMonth.replace("{n}", LIMITS[k].toLocaleString(LOCALE[state.lang])))}</strong></li>${feats.map(f=>`<li>${esc(f)}</li>`).join("")}</ul>
+      <a class="btn${k==="pro"?"":" ghost"}" href="/entrar?plano=${k}">${esc(t.startBtn)}</a></div>`;
+  }).join("");
+  $("tCur").textContent = state.cur;
+  calc();
+}
+function renderDemo(){
+  const d = DEMOS[state.demo], L = d[state.lang], t = T[state.lang];
+  state.busy=false;
+  $("biz").textContent = d.name; $("av").textContent = d.av;
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected", b.dataset.k===state.demo));
+  $("chat").innerHTML="";
+  bubble("out", L[0][0], d.time); bubble("in", price(L[0][1]), d.time);
+  $("chips").innerHTML = L[1].map((qa,i)=>`<button type="button" class="chip" data-i="${i}">${esc(qa[0])}</button>`).join("");
+}
+function bubble(side, text, time){
+  const el = document.createElement("div"); el.className = "msg "+side;
+  if(side==="in"){ const b=document.createElement("span"); b.className="bot"; b.textContent=T[state.lang].bot; el.appendChild(b); }
+  el.appendChild(document.createTextNode(text));
+  const tm=document.createElement("time"); tm.textContent = time + (side==="in" ? " ✓✓" : ""); el.appendChild(tm);
+  $("chat").appendChild(el); $("chat").scrollTop = $("chat").scrollHeight;
+}
+function ask(i){
+  if(state.busy) return; state.busy=true;
+  const key=state.demo, lang=state.lang, d=DEMOS[key], qa=d[lang][1][i];
+  bubble("out", qa[0], d.time);
+  const ty=document.createElement("div"); ty.className="typing"; ty.innerHTML="<i></i><i></i><i></i>";
+  $("chat").appendChild(ty); $("chat").scrollTop=$("chat").scrollHeight;
+  setTimeout(()=>{ if(key!==state.demo||lang!==state.lang){return;} ty.remove(); bubble("in", price(qa[1]), d.time); state.busy=false; }, 900);
+}
+function calc(){
+  const t=T[state.lang];
+  const m=+$("cMsgs").value, p=+$("cPct").value, c=+$("cConv").value;
+  let tk=parseFloat($("cTicket").value); if(!(tk>0)) tk=0;
+  $("oMsgs").textContent=m; $("oPct").textContent=p+"%"; $("oConv").textContent=c+" / 10";
+  const lost = m*30*(p/100)*(c/10)*tk;
+  $("cOut").textContent = fmt(lost, state.cur);
+  $("cCompare").textContent = t.cCmp.replace("{p}", fmt(PRICES[state.cur].pro[1], state.cur));
+}
+function updateSend(){
+  const a=$("num");
+  if(SUPPORT){ a.hidden=false; a.href="https://wa.me/"+SUPPORT; a.textContent="+"+SUPPORT; } else a.hidden=true;
+}
+function renderAll(){ renderSwitchers(); renderText(); renderPrices(); renderDemo(); updateSend(); }
+
+/* ===== Eventos ===== */
+$("langs").addEventListener("click",e=>{ const l=e.target.dataset.l; if(!l) return; state.lang=l; save("lang",l); renderAll(); });
+$("curs").addEventListener("click",e=>{ const c=e.target.dataset.c; if(!c) return; state.cur=c; save("cur",c); $("cTicket").value=TICKET[c]; renderSwitchers(); renderPrices(); renderDemo(); updateSend(); });
+$("tabs").addEventListener("click",e=>{ const k=e.target.dataset.k; if(!k) return; state.demo=k; renderDemo(); });
+$("chips").addEventListener("click",e=>{ const i=e.target.dataset.i; if(i===undefined) return; ask(+i); });
+["cMsgs","cPct","cConv","cTicket"].forEach(id=>$(id).addEventListener("input",calc));
+
+$("cTicket").value = TICKET[state.cur];
+renderAll();
+fetch("/api/public").then(r=>r.json()).then(d=>{
+  for(const k of ["ess","pro","com"]){ if(!d.plans?.[k]) continue; LIMITS[k]=d.plans[k].limit; for(const c of CURS) PRICES[c][k]=[0,d.plans[k].price[c]]; }
+  SUPPORT = d.support || ""; renderPrices(); updateSend();
+}).catch(()=>{});
+</script>
+
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));}</script>
+</body>
+</html>

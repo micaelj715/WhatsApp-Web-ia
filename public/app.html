@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel · Micael Automações</title>
+<meta name="theme-color" content="#0d7a55">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="/app.css">
+<style>
+/* Layout: menu lateral no computador, abas roladas no topo no celular; conteúdo em coluna de até 920px */
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.shell > *{min-width:0}
+aside{background:var(--surface);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh}
+nav{display:flex;flex-direction:column;gap:2px}
+nav button{border:0;background:transparent;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:6px}
+nav button[aria-current="page"]{background:var(--soft);color:var(--ink)}
+nav .dot{width:8px;height:8px;border-radius:50%;background:var(--bad)}
+nav .dot.ok{background:var(--accent)}
+.aside-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+main{padding:24px clamp(16px,3vw,36px) 60px;max-width:960px;width:100%;display:flex;flex-direction:column;gap:18px;min-width:0}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{display:flex;flex-direction:column;gap:6px}
+.stat .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.stat .val{font-family:var(--display);font-size:1.35rem;font-weight:800}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.checklist li{display:flex;gap:10px;align-items:center;cursor:pointer}
+.checklist .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.75rem;flex:none}
+.checklist li.done .ck{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.checklist li.done span:last-child{color:var(--muted);text-decoration:line-through}
+.qrwrap{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start}
+.qrbox{background:#fff;border-radius:16px;padding:16px;display:grid;place-items:center;min-height:300px;border:1px solid var(--line)}
+.qrbox img,.qrbox canvas{max-width:100%;height:auto}
+.qrbox p{color:#56706a;text-align:center}
+ol.how{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.chat{background:var(--chat-bg);border-radius:14px;height:420px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.bubble{max-width:80%;padding:8px 12px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.93rem}
+.bubble.user{align-self:flex-end;background:var(--bubble-in);border-top-right-radius:4px}
+.bubble.assistant{align-self:flex-start;background:var(--bubble-out);border-top-left-radius:4px}
+.bubble.owner{align-self:flex-start;background:var(--warn-soft);border-top-left-radius:4px}
+.bubble small{display:block;font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:2px}
+.bubble.note{align-self:center;background:var(--surface);border:1px dashed var(--accent);max-width:92%;font-size:.85rem}
+.composer{display:flex;gap:8px}
+.composer input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:10px 14px}
+.chats{display:grid;grid-template-columns:300px 1fr;gap:14px;min-height:480px}
+.chatlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:560px}
+.chatlist li{padding:10px 12px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;gap:2px;border:1px solid transparent}
+.chatlist li:hover,.chatlist li[aria-current="true"]{background:var(--soft)}
+.chatlist .last{font-size:.83rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.plan{border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.plan.cur{border:2px solid var(--accent)}
+.plan .price{font-family:var(--display);font-size:1.4rem;font-weight:800;font-variant-numeric:tabular-nums}
+.typing{display:flex;gap:4px;padding:10px 14px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:b 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none}}
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-weight:600}
+.switch input{appearance:none;width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;transition:background .15s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+.switch input:checked{background:var(--accent)} .switch input:checked::after{left:21px}
+[data-view]{display:none}[data-view].on{display:flex}
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  aside{position:sticky;top:0;height:auto;flex-direction:column;gap:10px;padding:10px 14px;z-index:5;border-right:0;border-bottom:1px solid var(--line)}
+  nav{flex-direction:row;overflow-x:auto;gap:4px}
+  nav button{white-space:nowrap;padding:8px 12px}
+  .aside-foot{display:none}
+  .grid3,.plans{grid-template-columns:1fr}
+  .qrwrap{grid-template-columns:1fr}
+  .chats{grid-template-columns:1fr}
+  .chats.detail .chatlist-card{display:none}
+  .chats:not(.detail) .chatview{display:none}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <a class="logo" href="/">Micael<span>.</span>Automações</a>
+    <nav id="nav"></nav>
+    <div class="aside-foot">
+      <a class="small" id="supportLink" target="_blank" rel="noopener" hidden></a>
+      <button class="btn ghost sm" id="logout2" type="button"></button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="head">
+      <div><h1 id="title"></h1><p class="muted" id="subtitle"></p></div>
+      <div class="seg" id="langs"></div>
+    </div>
+    <p id="banner" hidden></p>
+
+    <!-- INÍCIO -->
+    <section data-view="home" style="flex-direction:column;gap:14px">
+      <div class="grid3">
+        <div class="card stat"><span class="label" data-t="cWa"></span><span class="val" id="hWa"></span><button class="btn ghost sm" data-go="wa" id="hWaBtn" type="button"></button></div>
+        <div class="card stat"><span class="label" data-t="cBot"></span><label class="switch"><input type="checkbox" id="hBot"><span id="hBotTxt"></span></label><span class="small muted" id="hBotHint"></span></div>
+        <div class="card stat"><span class="label" data-t="cUsage"></span><span class="val" id="hUsage"></span><div class="bar"><i id="hUsageBar"></i></div></div>
+      </div>
+      <div class="card"><h2 data-t="steps"></h2><ul class="checklist" id="checklist"></ul></div>
+    </section>
+
+    <!-- WHATSAPP -->
+    <section data-view="wa" style="flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="qrwrap">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <ol class="how" id="waHow"></ol>
+            <p class="msg-ok" id="waDone" hidden></p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" id="btnQr" type="button" data-t="genQr"></button>
+              <button class="btn ghost" id="btnDisc" type="button" data-t="disconnect" hidden></button>
+            </div>
+            <p class="small muted" data-t="waNote"></p>
+            <p class="small msg-warn" data-t="waRisk"></p>
+          </div>
+          <div class="qrbox" id="qrbox"><p id="qrMsg"></p><div id="qr"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ATENDENTE -->
+    <section data-view="bot" style="flex-direction:column;gap:14px">
+      <form class="card" id="botForm" novalidate>
+        <div class="row2">
+          <div class="field"><label for="bBiz" data-t="business"></label><input id="bBiz"></div>
+          <div class="field"><label for="bNiche" data-t="niche"></label><select id="bNiche"></select></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="bLang" data-t="mainLang"></label><select id="bLang"><option value="pt">Português</option><option value="en">English</option><option value="fr">Français</option><option value="es">Español</option></select></div>
+          <div class="field"><label for="bTone" data-t="tone"></label><select id="bTone"></select></div>
+        </div>
+        <div class="field"><label for="bInfo" data-t="info"></label><span class="small muted" data-t="infoHint"></span><textarea id="bInfo" rows="12"></textarea></div>
+        <div class="field"><label for="bInstr" data-t="instr"></label><textarea id="bInstr" rows="3"></textarea></div>
+        <label class="check"><input type="checkbox" id="bNotify"><span data-t="notify"></span></label>
+        <label class="check"><input type="checkbox" id="bMedia"><span data-t="media"></span></label>
+        <div class="check" style="align-items:center;flex-wrap:wrap"><label for="bPause" data-t="pause"></label><input id="bPause" type="number" min="0" max="1440" style="width:90px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px"><span data-t="minutes"></span></div>
+        <div style="display:flex;gap:10px;align-items:center"><button class="btn" type="submit" data-t="save"></button><span id="botSaved" class="small" style="color:var(--accent);font-weight:600" hidden></span></div>
+        <p class="msg-error" id="botErr" hidden></p>
+      </form>
+    </section>
+
+    <!-- TESTAR -->
+    <section data-view="test" style="flex-direction:column;gap:14px">
+      <div class="card">
+        <p class="muted" data-t="testHint"></p>
+        <div class="chat" id="tChat" aria-live="polite"></div>
+        <form class="composer" id="tForm"><input id="tInput" autocomplete="off"><button class="btn" type="submit" data-t="send"></button></form>
+        <button class="btn ghost sm" id="tReset" type="button" style="align-self:flex-start" data-t="reset"></button>
+      </div>
+    </section>
+
+    <!-- CONVERSAS -->
+    <section data-view="chats" style="flex-direction:column">
+      <div class="chats" id="chatsWrap">
+        <div class="card chatlist-card" style="padding:10px"><ul class="chatlist" id="chatList"></ul></div>
+        <div class="card chatview">
+          <div class="head"><button class="btn ghost sm" id="chatBack" type="button" data-t="back"></button><strong id="chatName"></strong><button class="btn ghost sm" id="chatPause" type="button"></button></div>
+          <div class="chat" id="chatMsgs"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLANO -->
+    <section data-view="plan" style="flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="head"><h2 data-t="planTitle"></h2><div class="field" style="flex-direction:row;align-items:center;gap:8px"><label for="pCur" data-t="currency"></label><select id="pCur" style="width:auto"><option>CVE</option><option>EUR</option><option>BRL</option><option>USD</option></select></div></div>
+        <div class="plans" id="plans"></div>
+      </div>
+      <div class="card" id="payCard">
+        <h2 data-t="payTitle"></h2>
+        <p id="payText"></p>
+        <p class="small muted" id="cveNote" data-t="cveNote" hidden></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><a class="btn" id="payBtn" target="_blank" rel="noopener" data-t="payBtn"></a></div>
+        <div class="field"><label for="payNote" data-t="paidNote"></label><input id="payNote"></div>
+        <button class="btn ghost" id="paidBtn" type="button" style="align-self:flex-start" data-t="paidBtn"></button>
+        <p class="msg-ok" id="claimed" data-t="claimed" hidden></p>
+        <p class="msg-error" id="payErr" hidden></p>
+        <p class="small muted" id="renew"></p>
+      </div>
+    </section>
+
+    <!-- CONTA -->
+    <section data-view="account" style="flex-direction:column;gap:14px">
+      <div class="card">
+        <p><strong id="accEmail"></strong></p>
+        <h3 data-t="changePass"></h3>
+        <form id="passForm" class="row2" novalidate>
+          <div class="field"><label for="curPass" data-t="curPass"></label><input id="curPass" type="password" autocomplete="current-password"></div>
+          <div class="field"><label for="newPass" data-t="newPass"></label><input id="newPass" type="password" autocomplete="new-password"></div>
+          <div><button class="btn" type="submit" data-t="save"></button></div>
+        </form>
+        <p id="passMsg" hidden></p>
+        <button class="btn ghost" id="logout" type="button" style="align-self:flex-start"></button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/i18n.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const VIEWS = ["home","wa","bot","test","chats","plan","account"];
+let lang = getLang(), view = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "home";
+let me = null, qrObj = null, lastQr = "", waTimer = null, testHist = [], chatSel = null, discArmed = false;
+const t = () => I18N[lang];
+
+/* ---------- Carregar dados ---------- */
+async function loadMe(){
+  try { me = await api("/api/me"); }
+  catch(e){ banner("bad", t().err[e.code] || t().err.generic); return; }
+  if(!me.tenant){ location.href="/admin"; return; }
+  render();
+}
+
+/* ---------- Render geral ---------- */
+function render(){
+  const T = t(), tn = me?.tenant;
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(el => { const v = T[el.dataset.t]; if(typeof v === "string") el.textContent = v; });
+  $("langs").innerHTML = Object.keys(I18N).map(l=>`<button type="button" data-l="${l}" aria-pressed="${l===lang}">${l.toUpperCase()}</button>`).join("");
+  $("logout").textContent = T.logout; $("logout2").textContent = T.logout;
+  $("nav").innerHTML = VIEWS.map(v => {
+    let dot = "";
+    if(v==="wa" && tn) dot = `<span class="dot ${tn.wa.status==="connected"?"ok":""}"></span>`;
+    return `<button type="button" data-v="${v}" ${v===view?'aria-current="page"':""}>${T.nav[v]}${dot}</button>`;
+  }).join("");
+  document.querySelectorAll("[data-view]").forEach(s => s.classList.toggle("on", s.dataset.view === view));
+  $("title").textContent = view==="home" ? T.hello.replace("{name}", (me?.user.name || tn?.business || "").split(" ")[0]) : T.nav[view];
+  $("subtitle").textContent = tn ? tn.business : "";
+  if(!tn) return;
+  if(me.support){ $("supportLink").hidden=false; $("supportLink").href="https://wa.me/"+me.support; $("supportLink").textContent=T.support; }
+  const st = tn.state;
+  if(st==="trial") banner("ok", T.stTrial.replace("{d}", fmtDate(tn.trial_ends, lang)));
+  else if(st==="active") banner("ok", T.stActive.replace("{d}", fmtDate(tn.paid_until, lang)));
+  else if(st==="expired") banner("warn", T.stExpired);
+  else banner("bad", T.stSuspended);
+  renderHome(); renderWa(); renderBotForm(); renderPlan(); renderTestIntro();
+  $("accEmail").textContent = me.user.email;
+}
+function banner(kind, text){ const b=$("banner"); b.className = kind==="ok"?"msg-ok":kind==="warn"?"msg-warn":"msg-error"; b.textContent=text; b.hidden=false; }
+
+function renderHome(){
+  const T=t(), tn=me.tenant, w=tn.wa;
+  $("hWa").textContent = w.status==="connected" ? T.waOn.replace("{n}", w.number) : w.status==="qr" ? T.waQr : w.status==="connecting" ? T.waConnecting : T.waOff;
+  $("hWaBtn").textContent = T.s1; $("hWaBtn").hidden = w.status==="connected";
+  $("hBot").checked = tn.bot_enabled; $("hBotTxt").textContent = tn.bot_enabled ? T.botOn : T.botOff;
+  $("hUsage").textContent = `${tn.usage.toLocaleString()} / ${(tn.limit||0).toLocaleString()}`;
+  $("hUsageBar").style.width = Math.min(100, tn.usage / (tn.limit||1) * 100) + "%";
+  let tested = false; try { tested = localStorage.getItem("tested")==="1"; } catch {}
+  const items = [[T.s1, w.status==="connected", "wa"], [T.s2, (tn.config.info||"").trim().length > 40, "bot"], [T.s3, tested, "test"], [T.s4, tn.state==="active", "plan"]];
+  $("checklist").innerHTML = items.map(([txt, done, go]) => `<li class="${done?"done":""}" data-go="${go}"><span class="ck">${done?"✓":""}</span><span>${esc(txt)}</span></li>`).join("");
+}
+
+/* ---------- WhatsApp ---------- */
+function renderWa(){
+  const T=t(), w=me.tenant.wa;
+  $("waHow").innerHTML = T.waHow.map(s=>`<li>${esc(s)}</li>`).join("");
+  const connected = w.status==="connected";
+  $("waDone").hidden = !connected; $("waDone").textContent = T.waDone + (w.number ? ` (+${w.number})` : "");
+  $("btnQr").hidden = connected || w.status==="qr" || w.status==="connecting";
+  $("btnDisc").hidden = !connected && w.status!=="qr"; $("btnDisc").textContent = discArmed ? T.confirm : T.disconnect;
+  if(w.status==="qr" && w.qr){ drawQr(w.qr); $("qrMsg").textContent=""; }
+  else { clearQr(); $("qrMsg").textContent = connected ? "✓" : w.status==="connecting" ? T.qrWait : ""; }
+}
+function drawQr(text){
+  if(text === lastQr) return; lastQr = text;
+  if(!window.QRCode){ $("qrMsg").textContent = text; return; }
+  if(!qrObj) qrObj = new QRCode($("qr"), { text, width: 264, height: 264, correctLevel: QRCode.CorrectLevel.L });
+  else { qrObj.clear(); qrObj.makeCode(text); }
+  $("qr").hidden = false;
+}
+function clearQr(){ lastQr=""; $("qr").hidden = true; }
+async function pollWa(){
+  clearTimeout(waTimer);
+  try{
+    const s = await api("/api/wa/status");
+    const was = me.tenant.wa.status;
+    me.tenant.wa = s;
+    if(view==="wa" || view==="home") { renderWa(); renderHome(); }
+    if(was!=="disconnected" && s.status==="disconnected" && !discArmed && lastQrShown) { $("qrMsg").textContent = t().qrStopped; }
+    lastQrShown = s.status==="qr";
+    if(s.status!==was) render();
+  }catch{}
+  const fast = ["qr","connecting"].includes(me?.tenant?.wa.status);
+  waTimer = setTimeout(pollWa, fast ? 2500 : 15000);
+}
+let lastQrShown = false;
+$("btnQr").onclick = async () => {
+  $("btnQr").disabled = true; $("qrMsg").textContent = t().qrWait;
+  try{ me.tenant.wa = await api("/api/wa/connect",{method:"POST"}); renderWa(); pollWa(); }
+  catch(e){ $("qrMsg").textContent = t().err[e.code] || t().err.generic; }
+  $("btnQr").disabled = false;
+};
+$("btnDisc").onclick = async () => {
+  if(!discArmed){ discArmed = true; renderWa(); setTimeout(()=>{ discArmed=false; renderWa(); }, 4000); return; }
+  discArmed = false;
+  try{ me.tenant.wa = await api("/api/wa/disconnect",{method:"POST"}); }catch{}
+  render();
+};
+
+/* ---------- Atendente ---------- */
+let botFormFilled = false;
+function renderBotForm(){
+  const T=t(), tn=me.tenant, c=tn.config;
+  const keepN=$("bNiche").value, keepT=$("bTone").value;
+  $("bNiche").innerHTML = Object.entries(T.niches).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join("");
+  $("bTone").innerHTML = Object.entries(T.tones).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join("");
+  $("bInfo").placeholder = T.infoPh; $("bInstr").placeholder = T.instrPh;
+  if(!botFormFilled){
+    botFormFilled = true;
+    $("bBiz").value = tn.business; $("bNiche").value = tn.niche; $("bLang").value = tn.lang; $("bTone").value = c.tone || "amigavel";
+    $("bInfo").value = c.info || ""; $("bInstr").value = c.instructions || "";
+    $("bNotify").checked = c.notifyOwner !== false; $("bMedia").checked = c.mediaReply !== false; $("bPause").value = c.pauseMinutes ?? 60;
+  } else { if(keepN) $("bNiche").value=keepN; if(keepT) $("bTone").value=keepT; }
+}
+$("botForm").onsubmit = async e => {
+  e.preventDefault(); $("botErr").hidden = true;
+  try{
+    const r = await api("/api/tenant",{method:"PUT",body:{business:$("bBiz").value,niche:$("bNiche").value,lang:$("bLang").value,
+      config:{tone:$("bTone").value,info:$("bInfo").value,instructions:$("bInstr").value,notifyOwner:$("bNotify").checked,mediaReply:$("bMedia").checked,pauseMinutes:Number($("bPause").value)}}});
+    me.tenant = r.tenant; $("botSaved").textContent = t().saved; $("botSaved").hidden = false; setTimeout(()=>$("botSaved").hidden=true, 2500);
+    render();
+  }catch(err){ $("botErr").textContent = t().err[err.code] || t().err.generic; $("botErr").hidden = false; }
+};
+$("hBot").onchange = async () => {
+  try{ const r = await api("/api/tenant",{method:"PUT",body:{bot_enabled:$("hBot").checked}}); me.tenant=r.tenant; render(); }catch{ $("hBot").checked=!$("hBot").checked; }
+};
+
+/* ---------- Testar ---------- */
+function renderTestIntro(){ if(!testHist.length) drawTest(); $("tInput").placeholder = t().testPh; }
+function drawTest(extra){
+  const T=t();
+  $("tChat").innerHTML = testHist.map(m => m.role==="note"
+    ? `<div class="bubble note"><small>${esc(T.notifyPreview)}</small>${esc(m.text)}</div>`
+    : `<div class="bubble ${m.role}">${esc(m.text)}</div>`).join("") + (extra||"");
+  $("tChat").scrollTop = $("tChat").scrollHeight;
+}
+$("tForm").onsubmit = async e => {
+  e.preventDefault();
+  const text = $("tInput").value.trim(); if(!text) return;
+  $("tInput").value = ""; testHist.push({role:"user", text});
+  drawTest('<div class="bubble assistant typing"><i></i><i></i><i></i></div>');
+  try{
+    const r = await api("/api/test-chat",{method:"POST",body:{history:testHist.filter(m=>m.role!=="note")}});
+    if(r.reply) testHist.push({role:"assistant", text:r.reply});
+    if(r.notify) testHist.push({role:"note", text:r.notify});
+    try{ localStorage.setItem("tested","1"); }catch{}
+  }catch(err){
+    testHist.pop();
+    const T=t(); testHist.push({role:"note", text: err.code==="ai_not_configured" ? T.aiOff : err.code==="too_many_attempts" ? T.err.too_many_attempts : T.aiBusy});
+    testHist.splice(-1, 0, {role:"user", text});
+  }
+  drawTest();
+};
+$("tReset").onclick = () => { testHist = []; drawTest(); };
+
+/* ---------- Conversas ---------- */
+async function loadChats(){
+  const T=t();
+  let list = [];
+  try{ list = await api("/api/conversations"); }catch{}
+  $("chatList").innerHTML = list.length ? list.map(c => `<li data-chat="${esc(c.chat)}" ${c.chat===chatSel?'aria-current="true"':""}>
+      <strong>${esc(c.name || c.phone || c.chat.split("@")[0])}</strong>${c.paused?`<span class="pill warn">${esc(T.pausedTag)}</span>`:""}
+      <span class="last">${esc(c.last_text)}</span></li>`).join("")
+    : `<li class="muted" style="cursor:default">${esc(T.chatsEmpty)}</li>`;
+  if(!chatSel && list[0] && innerWidth > 860) openChat(list[0].chat, list[0].name || list[0].phone);
+}
+async function openChat(chat, name){
+  chatSel = chat; $("chatsWrap").classList.add("detail");
+  $("chatName").textContent = name || chat.split("@")[0];
+  document.querySelectorAll("#chatList li").forEach(li => li.toggleAttribute("aria-current", li.dataset.chat===chat));
+  try{
+    const r = await api("/api/conversations/" + encodeURIComponent(chat));
+    const T=t();
+    $("chatMsgs").innerHTML = r.messages.map(m => `<div class="bubble ${m.role==="user"?"user":m.role}">${m.role!=="user"?`<small>${esc(m.role==="owner"?T.you:T.botName)}</small>`:""}${esc(m.text)}</div>`).join("");
+    $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
+    setPauseBtn(r.paused);
+  }catch{}
+}
+function setPauseBtn(p){ $("chatPause").textContent = p ? t().resume : t().pause1h; $("chatPause").dataset.paused = p ? "1" : ""; }
+$("chatList").onclick = e => { const li = e.target.closest("li[data-chat]"); if(li) openChat(li.dataset.chat, li.querySelector("strong").textContent); };
+$("chatBack").onclick = () => { $("chatsWrap").classList.remove("detail"); };
+$("chatPause").onclick = async () => {
+  if(!chatSel) return;
+  const r = await api(`/api/conversations/${encodeURIComponent(chatSel)}/pause`,{method:"POST",body:{minutes:$("chatPause").dataset.paused?0:60}}).catch(()=>null);
+  if(r){ setPauseBtn(r.paused); loadChats(); }
+};
+
+/* ---------- Plano ---------- */
+function renderPlan(){
+  const T=t(), tn=me.tenant, cur = tn.currency;
+  $("pCur").value = cur;
+  $("plans").innerHTML = ["ess","pro","com"].map(k => `<div class="plan ${k===tn.plan?"cur":""}">
+    <h3>${esc(T.plans[k])}</h3><span class="price">${esc(fmtMoney(me.plans[k].price[cur], cur, lang))}<span class="small muted">${esc(T.month)}</span></span>
+    <span class="small muted">${esc(T.perMonth.replace("{n}", me.plans[k].limit.toLocaleString()))}</span>
+    ${k===tn.plan ? `<span class="pill">${esc(T.current)}</span>` : `<button class="btn ghost sm" type="button" data-plan="${k}">${esc(T.choose)}</button>`}</div>`).join("");
+  const pp = tn.paypal;
+  if(pp){
+    $("payText").textContent = T.payText.replace("{amount}", fmtMoney(pp.amount, pp.currency, lang));
+    $("payBtn").href = pp.link; $("payBtn").hidden = false; $("paidBtn").hidden = tn.pendingPayment;
+  } else { $("payText").textContent = T.noPaypal; $("payBtn").hidden = true; $("paidBtn").hidden = true; }
+  $("cveNote").hidden = !(pp && cur==="CVE");
+  $("claimed").hidden = !tn.pendingPayment;
+  $("renew").textContent = tn.state==="active" ? T.renew.replace("{d}", fmtDate(tn.paid_until, lang)) : "";
+}
+$("plans").onclick = async e => {
+  const b = e.target.closest("[data-plan]"); if(!b) return;
+  try{ const r = await api("/api/tenant",{method:"PUT",body:{plan:b.dataset.plan}}); me.tenant=r.tenant; render(); }catch{}
+};
+$("pCur").onchange = async () => { try{ const r = await api("/api/tenant",{method:"PUT",body:{currency:$("pCur").value}}); me.tenant=r.tenant; render(); }catch{} };
+$("paidBtn").onclick = async () => {
+  $("payErr").hidden = true;
+  try{ await api("/api/payments/claim",{method:"POST",body:{note:$("payNote").value}}); me.tenant.pendingPayment = true; renderPlan(); }
+  catch(err){ $("payErr").textContent = t().err[err.code] || t().err.generic; $("payErr").hidden = false; }
+};
+
+/* ---------- Conta ---------- */
+$("passForm").onsubmit = async e => {
+  e.preventDefault(); const m=$("passMsg"); m.hidden=true;
+  try{ await api("/api/account/password",{method:"POST",body:{current:$("curPass").value,password:$("newPass").value}}); m.className="msg-ok"; m.textContent=t().passChanged; $("curPass").value=$("newPass").value=""; }
+  catch(err){ m.className="msg-error"; m.textContent=t().err[err.code]||t().err.generic; }
+  m.hidden=false;
+};
+async function logout(){ await api("/api/logout",{method:"POST"}).catch(()=>{}); location.href="/entrar"; }
+$("logout").onclick = logout; $("logout2").onclick = logout;
+
+/* ---------- Navegação ---------- */
+function go(v){
+  if(!VIEWS.includes(v)) return;
+  view = v; history.replaceState(null, "", "#" + v); render(); scrollTo(0,0);
+  if(v==="chats") loadChats();
+  if(v==="wa" || v==="home") pollWa();
+}
+document.addEventListener("click", e => {
+  const n = e.target.closest("[data-v]"); if(n) return go(n.dataset.v);
+  const g = e.target.closest("[data-go]"); if(g) return go(g.dataset.go);
+});
+$("langs").onclick = e => { const l = e.target.dataset.l; if(!l) return; lang = l; setLang(l); render(); if(view==="chats") loadChats(); };
+setInterval(() => { if(view==="chats") { loadChats(); if(chatSel) openChat(chatSel, $("chatName").textContent); } }, 15000);
+setInterval(() => { if(document.visibilityState==="visible") loadMe(); }, 60000);
+
+render();
+loadMe().then(() => { pollWa(); if(view==="chats") loadChats(); });
+</script>
+<script>if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});</script>
+</body>
+</html>

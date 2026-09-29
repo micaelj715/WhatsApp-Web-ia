@@ -61,6 +61,7 @@
     </form>
 
     <form id="fLogin" novalidate style="display:flex;flex-direction:column;gap:12px" hidden>
+      <p class="msg-warn" id="adminNote" hidden></p>
       <div class="field"><label for="lEmail" data-t="email"></label><input id="lEmail" type="email" autocomplete="email"></div>
       <div class="field"><label for="lPass" data-t="password"></label><input id="lPass" type="password" autocomplete="current-password"></div>
       <p class="msg-error" id="lErr" hidden></p>
@@ -122,7 +123,9 @@ $("fLogin").onsubmit = async e => {
   catch(err){ showErr($("lErr"), err.code); $("lBtn").disabled=false; }
 };
 
+if(params.get("destino")==="admin"){ mode="login"; }
 render();
+if(params.get("destino")==="admin"){ const n=$("adminNote"); n.hidden=false; n.textContent=({pt:"Entre com o e-mail e a senha de administrador.",en:"Log in with the administrator email and password.",fr:"Connectez-vous avec l'e-mail et le mot de passe administrateur.",es:"Entra con el correo y la contraseña de administrador."})[lang]; }
 api("/api/public").then(d=>{ plans=d.plans; renderPlans(); }).catch(()=>{});
 </script>
 <script>if("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(()=>{});</script>

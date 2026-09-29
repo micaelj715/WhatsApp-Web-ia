@@ -23,6 +23,7 @@ th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.06e
 td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-variant-numeric:tabular-nums}
 td .acts{display:flex;gap:6px;flex-wrap:wrap}
 .filters{display:flex;gap:8px;flex-wrap:wrap}
+#plansBody input{width:100%;min-width:80px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:7px 9px;font:inherit;color:inherit;font-variant-numeric:tabular-nums}
 .filters input,.filters select{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px}
 @media (max-width:760px){.kpis{grid-template-columns:1fr 1fr}}
 </style>
@@ -34,6 +35,7 @@ td .acts{display:flex;gap:6px;flex-wrap:wrap}
     <button class="btn ghost sm" id="logout" type="button">Sair</button>
   </div>
 
+  <p class="msg-error" id="storageWarn" hidden><strong>Os dados estão sendo apagados.</strong> O site não tem um Volume no Railway, então contas, clientes e conexões do WhatsApp somem a cada atualização. No Railway, crie um Volume ligado a este serviço com o caminho <span class="mono">/data</span>.</p>
   <div class="kpis">
     <div class="card kpi main"><span class="label">Receita mensal (clientes pagos)</span><span class="val" id="kMrr">–</span></div>
     <div class="card kpi"><span class="label">Clientes pagos</span><span class="val" id="kPaid">0</span></div>
@@ -44,6 +46,14 @@ td .acts{display:flex;gap:6px;flex-wrap:wrap}
   <div class="card" id="aiCard">
     <div class="top"><h2>IA (Groq)</h2><button class="btn ghost sm" id="aiBtn" type="button">Testar conexão com a IA</button></div>
     <div id="aiOut" class="small muted">Clique para testar a chave e os modelos configurados no Railway.</div>
+  </div>
+
+  <div class="card" id="plansCard">
+    <div class="top"><h2>Planos, preços e links de pagamento</h2><button class="btn sm" id="plansSave" type="button">Salvar planos</button></div>
+    <p class="small muted">Os preços aparecem no site e no painel dos clientes na moeda que cada um escolher. O link de pagamento abre quando o cliente clica em "Pagar com PayPal". Se for um link paypal.me (ex.: https://paypal.me/seunome), o valor e a moeda já vão preenchidos. Quem paga em escudos paga o equivalente em euros, porque o PayPal não aceita CVE.</p>
+    <div class="table-wrap"><table style="min-width:900px"><thead><tr><th>Plano</th><th>Respostas/mês</th><th>CVE</th><th>EUR</th><th>BRL</th><th>USD</th><th style="min-width:260px">Link de pagamento</th></tr></thead><tbody id="plansBody"></tbody></table></div>
+    <p class="small muted" id="plansFallback"></p>
+    <p id="plansMsg" hidden></p>
   </div>
 
   <div class="card" id="payCard">
@@ -76,6 +86,7 @@ async function load(){
   catch(e){ $("err").textContent = "Não consegui carregar os dados."; $("err").hidden = false; }
 }
 function render(){
+  $("storageWarn").hidden = !data.storage || data.storage.persistent;
   const paid = data.tenants.filter(t => t.state==="active");
   const mrr = paid.reduce((s,t) => s + t.price / (RATE[t.currency]||1), 0);
   $("kMrr").textContent = fmtMoney(mrr, "EUR", "pt");
@@ -138,6 +149,31 @@ $("aiBtn").onclick = async () => {
   } catch { $("aiOut").textContent = "Não consegui testar agora."; }
   $("aiBtn").disabled = false;
 };
+const CURS = ["CVE","EUR","BRL","USD"];
+async function loadPlans(){
+  try{
+    const r = await api("/api/admin/plans");
+    $("plansBody").innerHTML = ["ess","pro","com"].map(k => { const p = r.plans[k]; return `<tr data-k="${k}">
+      <td><strong>${PLAN[k]}</strong></td>
+      <td><input type="number" min="10" step="1" data-f="limit" value="${p.limit}" aria-label="Respostas por mês ${PLAN[k]}"></td>
+      ${CURS.map(c => `<td><input type="number" min="0" step="any" data-c="${c}" value="${p.price[c]}" aria-label="Preço ${c} ${PLAN[k]}"></td>`).join("")}
+      <td><input type="url" data-f="link" placeholder="https://paypal.me/seunome" value="${esc(p.link)}" aria-label="Link de pagamento ${PLAN[k]}"></td></tr>`; }).join("");
+    $("plansFallback").textContent = r.fallbackLink ? `Plano sem link próprio usa o link geral do Railway (PAYPAL_LINK): ${r.fallbackLink}` : "Plano sem link não mostra o botão de pagamento para o cliente.";
+  }catch{ $("plansBody").innerHTML = `<tr><td colspan="7" class="muted">Não consegui carregar os planos.</td></tr>`; }
+}
+$("plansSave").onclick = async () => {
+  const plans = {};
+  document.querySelectorAll("#plansBody tr[data-k]").forEach(tr => {
+    const k = tr.dataset.k, price = {};
+    tr.querySelectorAll("[data-c]").forEach(i => price[i.dataset.c] = Number(i.value));
+    plans[k] = { limit: Number(tr.querySelector('[data-f="limit"]').value), link: tr.querySelector('[data-f="link"]').value.trim(), price };
+  });
+  const m = $("plansMsg"); $("plansSave").disabled = true;
+  try{ await api("/api/admin/plans",{method:"PUT",body:{plans}}); m.className="msg-ok"; m.textContent="Planos salvos. O site e os painéis já mostram os valores novos."; await load(); }
+  catch(e){ m.className="msg-error"; m.textContent = e.code==="bad_link" ? "Um dos links não é válido. Use um endereço que comece com https://" : e.code==="bad_price" ? "Confira os preços: todos precisam ser maiores que zero." : e.code==="bad_limit" ? "As respostas por mês precisam ser pelo menos 10." : "Não consegui salvar. Tente de novo."; }
+  m.hidden = false; $("plansSave").disabled = false;
+};
+loadPlans();
 load(); setInterval(load, 30000);
 </script>
 </body>

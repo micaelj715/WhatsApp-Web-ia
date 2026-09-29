@@ -19,7 +19,17 @@ export const config = {
   aiConcurrency: Number(env.AI_CONCURRENCY) || 3,
 };
 
+// Os dados só sobrevivem a atualizações se estiverem num Volume do Railway
+export function storageInfo() {
+  const onRailway = !!(env.RAILWAY_ENVIRONMENT || env.RAILWAY_ENVIRONMENT_NAME || env.RAILWAY_PROJECT_ID);
+  const mount = env.RAILWAY_VOLUME_MOUNT_PATH ? path.resolve(env.RAILWAY_VOLUME_MOUNT_PATH) : "";
+  const persistent = !onRailway || (!!mount && (config.dataDir === mount || config.dataDir.startsWith(mount + path.sep)));
+  return { persistent, dir: config.dataDir, volume: mount };
+}
+
 export function assertConfig(log) {
+  const st = storageInfo();
+  if (!st.persistent) log(`AVISO GRAVE: sem Volume. Os dados em ${st.dir} são APAGADOS a cada atualização. Crie um Volume montado em /data.`);
   if (!config.groqKey) log("AVISO: GROQ_API_KEY não definida. O atendente não vai conseguir responder.");
   if (!config.adminEmail || config.adminPassword.length < 8)
     log("AVISO: defina ADMIN_EMAIL e ADMIN_PASSWORD (mínimo 8 caracteres) para acessar /admin.");

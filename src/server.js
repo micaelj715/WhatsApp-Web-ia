@@ -2,9 +2,9 @@ import http from "node:http";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { config, assertConfig } from "./config.js";
+import { config, assertConfig, storageInfo } from "./config.js";
 import { db, getTenant, accessState, saveMessage, chatHistory, useQuota, usageOf, today, addDays, addMonths, cleanup } from "./db.js";
-import { PLANS, CURRENCIES, TRIAL_LIMIT, paypalAmount } from "./plans.js";
+import { getPlans, isPlan, savePlans, publicPlans, CURRENCIES, TRIAL_LIMIT, paypalAmount, paymentFor } from "./plans.js";
 import { answer, checkAI } from "./ai.js";
 import * as wa from "./wa.js";
 import { createRouter, parseCookies, readJson, sendJson, redirect, serveFile, safeJoin, HttpError } from "./http.js";
@@ -119,7 +119,7 @@ async function reply(id, jid, name) {
   const key = id + "|" + jid;
   if (!botCanReply(t) || isPaused(key)) return;
   const state = accessState(t);
-  const limit = state === "trial" ? TRIAL_LIMIT : (PLANS[t.plan]?.limit || PLANS.ess.limit);
+  const limit = state === "trial" ? TRIAL_LIMIT : (getPlans()[t.plan]?.limit || getPlans().ess.limit);
   if (!useQuota(id, limit)) {
     const mk = id + "|" + new Date().toISOString().slice(0, 7);
     if (!quotaWarned.has(mk)) { quotaWarned.add(mk); await wa.notifyOwner(id, QUOTA_MSG[t.lang] || QUOTA_MSG.pt); }
@@ -137,17 +137,14 @@ async function reply(id, jid, name) {
 
 /* ================= Dados que o painel mostra ================= */
 function paypalFor(t) {
-  const p = paypalAmount(t.plan, t.currency);
-  if (!config.paypalLink || !p) return null;
-  const link = /paypal\.me\//i.test(config.paypalLink) ? `${config.paypalLink}/${p.amount}${p.currency}` : config.paypalLink;
-  return { link, amount: p.amount, currency: p.currency };
+  return paymentFor(t.plan, t.currency, config.paypalLink);
 }
 function tenantView(t) {
   const state = accessState(t);
   return {
     business: t.business, niche: t.niche, country: t.country, lang: t.lang, currency: t.currency, plan: t.plan,
     bot_enabled: !!t.bot_enabled, config: t.config, trial_ends: t.trial_ends, paid_until: t.paid_until, state,
-    usage: usageOf(t), limit: state === "trial" ? TRIAL_LIMIT : PLANS[t.plan]?.limit,
+    usage: usageOf(t), limit: state === "trial" ? TRIAL_LIMIT : getPlans()[t.plan]?.limit,
     wa: wa.getStatus(t.id), paypal: paypalFor(t),
     pendingPayment: !!db.prepare("SELECT 1 FROM payments WHERE tenant_id = ? AND status = 'claimed'").get(t.id),
   };
@@ -173,7 +170,7 @@ const needTenant = req => { const u = needUser(req); const t = getTenant(u.id); 
 r.get("/api/health", (req, res) => sendJson(res, 200, { ok: true }));
 
 r.get("/api/public", (req, res) => sendJson(res, 200, {
-  plans: Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { price: p.price, limit: p.limit }])),
+  plans: publicPlans(),
   trialDays: config.trialDays, trialLimit: TRIAL_LIMIT, support: config.supportWhatsapp,
 }));
 
@@ -189,7 +186,7 @@ r.post("/api/signup", async (req, res) => {
   if (db.prepare("SELECT 1 FROM users WHERE email = ?").get(email)) throw new HttpError(409, "email_taken");
   const lang = LANGS.includes(b.lang) ? b.lang : "pt";
   const currency = CURRENCIES.includes(b.currency) ? b.currency : "EUR";
-  const plan = PLANS[b.plan] ? b.plan : "pro";
+  const plan = isPlan(b.plan) ? b.plan : "pro";
   const niche = NICHES.includes(b.niche) ? b.niche : "outro";
   const info = db.prepare("INSERT INTO users (email, pass, name, role) VALUES (?, ?, ?, 'client')")
     .run(email, hashPassword(password), String(b.name || "").trim().slice(0, 80));
@@ -236,7 +233,7 @@ r.get("/api/me", (req, res) => {
   sendJson(res, 200, {
     user: { name: u.name, email: u.email, role: u.role },
     tenant: t ? tenantView(t) : null,
-    plans: Object.fromEntries(Object.entries(PLANS).map(([k, p]) => [k, { price: p.price, limit: p.limit }])),
+    plans: publicPlans(),
     trialLimit: TRIAL_LIMIT, support: config.supportWhatsapp,
   });
 });
@@ -250,7 +247,7 @@ r.put("/api/tenant", async (req, res) => {
     country: b.country !== undefined ? String(b.country).slice(0, 60) : t.country,
     lang: LANGS.includes(b.lang) ? b.lang : t.lang,
     currency: CURRENCIES.includes(b.currency) ? b.currency : t.currency,
-    plan: PLANS[b.plan] ? b.plan : t.plan,
+    plan: isPlan(b.plan) ? b.plan : t.plan,
     bot_enabled: b.bot_enabled !== undefined ? (b.bot_enabled ? 1 : 0) : t.bot_enabled,
     config: JSON.stringify(b.config ? cleanConfig(b.config, t.config) : t.config),
   };
@@ -331,6 +328,16 @@ r.post("/api/payments/claim", async (req, res) => {
 });
 
 /* ---------- Administração ---------- */
+r.get("/api/admin/plans", (req, res) => {
+  needAdmin(req);
+  sendJson(res, 200, { plans: getPlans(), currencies: CURRENCIES, fallbackLink: config.paypalLink });
+});
+r.put("/api/admin/plans", async (req, res) => {
+  needAdmin(req);
+  const b = await readJson(req);
+  try { sendJson(res, 200, { plans: savePlans(b.plans) }); }
+  catch (e) { sendJson(res, 400, { error: e.message, field: e.field || "" }); }
+});
 r.get("/api/admin/ai-check", async (req, res) => {
   needAdmin(req);
   sendJson(res, 200, { ...(await checkAI()), keyStart: config.groqKey ? config.groqKey.slice(0, 4) + "…" : "", models: [config.groqModel, config.groqFallbackModel] });
@@ -343,14 +350,14 @@ r.get("/api/admin/overview", (req, res) => {
     const u = db.prepare("SELECT email, name, created_at FROM users WHERE id = ?").get(id);
     return {
       id, email: u.email, name: u.name, created_at: u.created_at, business: t.business, niche: t.niche, country: t.country,
-      lang: t.lang, currency: t.currency, plan: t.plan, price: PLANS[t.plan]?.price[t.currency] ?? 0, state: accessState(t),
+      lang: t.lang, currency: t.currency, plan: t.plan, price: getPlans()[t.plan]?.price[t.currency] ?? 0, state: accessState(t),
       trial_ends: t.trial_ends, paid_until: t.paid_until, usage: usageOf(t), bot_enabled: !!t.bot_enabled,
       wa: wa.getStatus(id), suspended: !!t.suspended,
     };
   });
   const payments = db.prepare(`SELECT p.*, t.business, u.email FROM payments p JOIN tenants t ON t.id = p.tenant_id JOIN users u ON u.id = p.tenant_id
     ORDER BY p.status = 'claimed' DESC, p.created_at DESC LIMIT 100`).all();
-  sendJson(res, 200, { tenants, payments });
+  sendJson(res, 200, { tenants, payments, storage: storageInfo() });
 });
 
 function extend(id, months) {
@@ -369,7 +376,7 @@ r.post("/api/admin/tenants/:id", async (req, res, p) => {
   else if (b.action === "suspend") { db.prepare("UPDATE tenants SET suspended = 1 WHERE id = ?").run(id); }
   else if (b.action === "unsuspend") db.prepare("UPDATE tenants SET suspended = 0 WHERE id = ?").run(id);
   else if (b.action === "trial") db.prepare("UPDATE tenants SET trial_ends = ? WHERE id = ?").run(addDays(today(), Math.max(1, Math.min(60, Number(b.days) || 7))), id);
-  else if (b.action === "plan" && PLANS[b.plan]) db.prepare("UPDATE tenants SET plan = ? WHERE id = ?").run(b.plan, id);
+  else if (b.action === "plan" && isPlan(b.plan)) db.prepare("UPDATE tenants SET plan = ? WHERE id = ?").run(b.plan, id);
   else throw new HttpError(400, "bad_action");
   sendJson(res, 200, { ok: true });
 });
@@ -391,7 +398,12 @@ r.post("/api/admin/payments/:id/:action", (req, res, p) => {
 /* ---------- Páginas ---------- */
 const page = file => (req, res) => serveFile(res, path.join(PUBLIC, file));
 r.get("/", page("index.html"));
-r.get("/entrar", (req, res) => currentUser(req) ? redirect(res, "/app") : serveFile(res, path.join(PUBLIC, "entrar.html")));
+r.get("/entrar", (req, res, _p) => {
+  const u = currentUser(req), q = new URL(req.url, "http://x").searchParams;
+  // Com ?modo=entrar a tela de login sempre aparece, mesmo com alguém logado (para trocar de conta)
+  if (u && !q.get("modo")) return redirect(res, u.role === "admin" ? "/admin" : "/app");
+  serveFile(res, path.join(PUBLIC, "entrar.html"));
+});
 r.get("/app", (req, res) => {
   const u = currentUser(req);
   if (!u) return redirect(res, "/entrar");
@@ -400,7 +412,7 @@ r.get("/app", (req, res) => {
 });
 r.get("/admin", (req, res) => {
   const u = currentUser(req);
-  if (!u || u.role !== "admin") return redirect(res, "/entrar");
+  if (!u || u.role !== "admin") return redirect(res, "/entrar?modo=entrar&destino=admin");
   serveFile(res, path.join(PUBLIC, "admin.html"));
 });
 

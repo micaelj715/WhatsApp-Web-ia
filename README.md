@@ -37,7 +37,7 @@ O atendente:
 | `GROQ_API_KEY` | `gsk_...` | Chave da IA. Crie em console.groq.com > API Keys |
 | `ADMIN_EMAIL` | `voce@email.com` | Seu login no `/admin` |
 | `ADMIN_PASSWORD` | uma senha forte | Sua senha do `/admin` (mínimo 8 caracteres) |
-| `PAYPAL_LINK` | `https://paypal.me/seunome` | Link de pagamento. Se for paypal.me, o valor e a moeda já vão preenchidos |
+| `PAYPAL_LINK` | `https://paypal.me/seunome` | Opcional. Link reserva; os links de cada plano ficam no `/admin` |
 | `SUPPORT_WHATSAPP` | `2389912345` | Seu WhatsApp de suporte (código do país + número, só números) |
 | `DATA_DIR` | `/data` | Pasta do volume (se não definir, usa o caminho do volume do Railway) |
 | `GROQ_MODEL` | (deixe sem) | Opcional. O padrão é `openai/gpt-oss-120b`, com `openai/gpt-oss-20b` de reserva, liberados no plano grátis do Groq |
@@ -66,7 +66,7 @@ O atendente:
 3. O pagamento aparece em `/admin` como "Aguardando". **Confira no seu PayPal se o dinheiro entrou** e clique em "Confirmar". Isso libera 1 mês do plano.
 4. Quem escolheu escudo (CVE) paga o equivalente em euros, porque o PayPal não aceita CVE.
 
-Para mudar preços ou limites, edite `src/plans.js`. O site e os painéis se atualizam sozinhos.
+Preços (nas 4 moedas), respostas por mês e o link de pagamento de cada plano são ajustados em `/admin` > **Planos, preços e links de pagamento**. O site e os painéis se atualizam na hora. `PAYPAL_LINK` no Railway vira só o link reserva para plano sem link próprio.
 
 ## Limites que você precisa conhecer
 - **WhatsApp por QR code (Baileys):** é o mesmo método do WhatsApp Web, mas não é oficial para robôs. O WhatsApp pode bloquear números que mandam muitas mensagens para quem não escreveu primeiro. O atendente só responde quem escreveu, o que reduz o risco, mas não o elimina. Quando tiver clientes pagando, o próximo passo é trocar para a API oficial da Meta (o arquivo `src/wa.js` concentra toda a parte do WhatsApp, então a troca fica isolada nele).
